@@ -5,10 +5,14 @@
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+<<<<<<< Updated upstream
     <name>Plugin_ballerina</name>
+=======
+    <name>Ballerina Swan Lake</name>
+>>>>>>> Stashed changes
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">YourCompany</vendor>
+    <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">WSO2</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
@@ -51,10 +55,71 @@
         <typedHandler implementation="org.intellij.sdk.language.BallerinaTypedHandler"/>
 
 
+<<<<<<< Updated upstream
 <!--        <highlightErrorFilter implementation="org.intellij.sdk.language.BallerinaHighlightErrorFilter"-->
 <!--                              id="BallerinaHighlightErrorFilter"/>-->
+=======
 
+        <highlightErrorFilter implementation="org.intellij.sdk.language.BallerinaHighlightErrorFilter"
+                              id="BallerinaHighlightErrorFilter"/>
+>>>>>>> Stashed changes
+
+        <sdkType implementation="org.intellij.sdk.language.BallerinaSdkType"/>
+
+<!--        <moduleType-->
+<!--                id="BALLERINA_MODULE_TYPE"-->
+<!--                implementationClass="org.intellij.sdk.language.BallerinaModuleType"/>-->
+
+<!--        <moduleBuilder builderClass="org.intellij.sdk.language.BallerinaProjectModuleBuilder"-->
+<!--                       id="BALLERINA_MODULE_BUILDER"-->
+<!--        />-->
+
+
+        <configurationType
+                implementation="org.intellij.sdk.language.BallerinaRunConfigurationType"/>
+
+        <configurationType
+                implementation="org.intellij.sdk.language.BallerinaTestConfigurationType"/>
+
+        <codeInsight.lineMarkerProvider
+                language="Ballerina"
+                implementationClass="org.intellij.sdk.language.BallerinaRunLineMarkerProvider"/>
+
+        <codeInsight.lineMarkerProvider
+                language="Ballerina"
+                implementationClass="org.intellij.sdk.language.BallerinaTestLineMarkerProvider"/>
+
+        <preloadingActivity
+                implementation="org.intellij.sdk.language.BallerinaPreloadingActivity"
+                id="org.intellij.sdk.language.BallerinaPreloadingActivity"/>
+
+        <statusBarWidgetFactory implementation="org.intellij.sdk.language.BallerinaDetectionWidgetFactory"
+                                id="BallerinaStatusBarWidget"/>
+
+        <statusBarWidgetFactory implementation="org.intellij.sdk.language.BallerinaIconWidgetFactory"
+                                id="BallerinaIconWidget"/>
+
+        <notificationGroup id="Ballerina Plugin Notifications"
+                           displayType="BALLOON"
+                           toolWindowId=""
+                           isLogByDefault="true"/>
 
     </extensions>
+
+
+    <actions>
+        <action id="org.intellij.sdk.language.BallerinaRunFileAction"
+                class="org.intellij.sdk.language.BallerinaRunFileAction" text="Run Ballerina File">
+            <add-to-group group-id="EditorPopupMenu.Run" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+        <action id="org.intellij.sdk.language.BallerinaTestAction"
+                class="org.intellij.sdk.language.BallerinaTestAction" text="Test Ballerina File">
+            <add-to-group group-id="EditorPopupMenu.Run" anchor="last"/>
+<!--            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>-->
+        </action>
+    </actions>
+
+
 
 </idea-plugin>
