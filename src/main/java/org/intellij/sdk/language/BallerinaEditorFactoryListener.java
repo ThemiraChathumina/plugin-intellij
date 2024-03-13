@@ -31,7 +31,7 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
         this.project = project;
     }
 
-
+    // Todo: check for mac
     @Override
     public void editorCreated(@NotNull EditorFactoryEvent event) {
         Project project = event.getEditor().getProject();
