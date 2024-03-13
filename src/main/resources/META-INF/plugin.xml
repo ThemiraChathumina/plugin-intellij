@@ -5,11 +5,8 @@
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
-<<<<<<< Updated upstream
     <name>Plugin_ballerina</name>
-=======
     <name>Ballerina Swan Lake</name>
->>>>>>> Stashed changes
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">WSO2</vendor>
@@ -55,14 +52,11 @@
         <typedHandler implementation="org.intellij.sdk.language.BallerinaTypedHandler"/>
 
 
-<<<<<<< Updated upstream
 <!--        <highlightErrorFilter implementation="org.intellij.sdk.language.BallerinaHighlightErrorFilter"-->
 <!--                              id="BallerinaHighlightErrorFilter"/>-->
-=======
 
         <highlightErrorFilter implementation="org.intellij.sdk.language.BallerinaHighlightErrorFilter"
                               id="BallerinaHighlightErrorFilter"/>
->>>>>>> Stashed changes
 
         <sdkType implementation="org.intellij.sdk.language.BallerinaSdkType"/>
 
@@ -104,7 +98,10 @@
                            toolWindowId=""
                            isLogByDefault="true"/>
 
+
+
     </extensions>
+
 
 
     <actions>
@@ -117,6 +114,12 @@
                 class="org.intellij.sdk.language.BallerinaTestAction" text="Test Ballerina File">
             <add-to-group group-id="EditorPopupMenu.Run" anchor="last"/>
 <!--            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>-->
+        </action>
+        <action id="CreateBallerinaFile"
+                class="org.intellij.sdk.language.BallerinaFileAction"
+                text="Create Ballerina File"
+                description="Creates a new Ballerina file">
+            <add-to-group group-id="NewGroup" anchor="last"/>
         </action>
     </actions>
 
