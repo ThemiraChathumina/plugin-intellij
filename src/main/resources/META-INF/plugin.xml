@@ -98,6 +98,45 @@
                            toolWindowId=""
                            isLogByDefault="true"/>
 
+        <!-- register intellijLanguageClient as a Service OR as a plugin component (see readme)... -->
+<!--        <applicationService serviceImplementation="org.wso2.lsp4intellij.IntellijLanguageClient"/>-->
+
+        <!-- register a listener on editor events, required for lsp file sync -->
+<!--        <editorFactoryListener implementation="org.wso2.lsp4intellij.listeners.LSPEditorListener"/>-->
+<!--        <fileDocumentManagerListener implementation="org.wso2.lsp4intellij.listeners.LSPFileDocumentManagerListener"/>-->
+
+        <!-- for displaying notifications by lsp -->
+<!--        <notificationGroup id="lsp" displayType="STICKY_BALLOON"/>-->
+
+        <!-- for displaying the statusbar icon -->
+<!--        <statusBarWidgetFactory implementation="org.wso2.lsp4intellij.statusbar.LSPServerStatusWidgetFactory"-->
+<!--                                id="org.wso2.lsp4intellij.statusbar.LSPServerStatusWidgetFactory"-->
+<!--                                order="first" />-->
+
+        <!-- needed for completion -->
+<!--        <completion.contributor implementationClass="org.wso2.lsp4intellij.contributors.LSPCompletionContributor"-->
+<!--                                id="org.wso2.lsp4intellij.contributors.LSPCompletionContributor" language="any"/>-->
+        <!--         needed for completion as well as signature help -->
+<!--        <typedHandler implementation="org.wso2.lsp4intellij.listeners.LSPTypedHandler"-->
+<!--                      id="LSPTypedHandler"/>-->
+
+        <!-- needed for code diagnostics -->
+<!--        <externalAnnotator id="LSPAnnotator" language="Ballerina"-->
+<!--                           implementationClass="org.wso2.lsp4intellij.contributors.annotator.LSPAnnotator"/>-->
+
+        <!-- needed for Workspace Symbols -->
+<!--        <gotoSymbolContributor implementation="org.wso2.lsp4intellij.contributors.symbol.LSPSymbolContributor"-->
+<!--                               id="LSPSymbolContributor"/>-->
+
+        <!-- needed for renaming -->
+<!--        <renameHandler implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameHandler" id="LSPRenameHandler" order="first"/>-->
+<!--        <renamePsiElementProcessor implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameProcessor" id="LSPRenameProcessor" order="first"/>-->
+
+        <!-- debugger -->
+        <programRunner id="ballerinaDebugger"
+                       implementation="org.intellij.sdk.language.debugger.BallerinaDebugger"/>
+        <xdebugger.breakpointType
+                implementation="org.intellij.sdk.language.debugger.breakpoint.BallerinaBreakPointType"/>
 
 
     </extensions>
@@ -121,8 +160,27 @@
                 description="Creates a new Ballerina file">
             <add-to-group group-id="NewGroup" anchor="last"/>
         </action>
-    </actions>
+        <!-- needed for hover -->
+<!--        <action id="org.intellij.sdk.action.QuickDocAction" class="org.wso2.lsp4intellij.actions.LSPQuickDocAction">-->
+<!--        </action>-->
 
+        <!-- needed for find references -->
+<!--        <action class="org.wso2.lsp4intellij.actions.LSPReferencesAction" id="LSPFindUsages">-->
+<!--            <keyboard-shortcut first-keystroke="shift alt F7" keymap="$default"/>-->
+<!--        </action>-->
+<!--        <action class="org.wso2.lsp4intellij.actions.LSPReformatAction" id="ReformatCode"-->
+<!--                use-shortcut-of="ReformatCode"-->
+<!--                overrides="true" text="Reformat Code"/>-->
+<!--        <action class="org.wso2.lsp4intellij.actions.LSPShowReformatDialogAction" id="ShowReformatFileDialog"-->
+<!--                use-shortcut-of="ShowReformatFileDialog" overrides="true" text="Show Reformat File Dialog"/>-->
+    </actions>
+<!--    <applicationListeners>-->
+<!--        &lt;!&ndash; required for lsp file sync &ndash;&gt;-->
+<!--        <listener class="org.wso2.lsp4intellij.listeners.VFSListener"-->
+<!--                  topic="com.intellij.openapi.vfs.VirtualFileListener"/>-->
+<!--        <listener class="org.wso2.lsp4intellij.listeners.LSPProjectManagerListener"-->
+<!--                  topic="com.intellij.openapi.project.ProjectManagerListener"/>-->
+<!--    </applicationListeners>-->
 
 
 </idea-plugin>

@@ -25,6 +25,16 @@ version = '1.0-snapshot'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j:0.15.0'
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.15.0'
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:0.15.0'
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc.debug:0.15.0'
+    implementation 'com.github.ballerina-platform:lsp4intellij:0.95.2'
+
 }
 
 // Configure Gradle IntelliJ Plugin
