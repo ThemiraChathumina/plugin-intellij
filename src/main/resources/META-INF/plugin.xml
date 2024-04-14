@@ -138,6 +138,8 @@
         <xdebugger.breakpointType
                 implementation="org.intellij.sdk.language.debugger.breakpoint.BallerinaBreakPointType"/>
 
+        <lang.foldingBuilder language="Ballerina"
+                             implementationClass="org.intellij.sdk.language.BallerinaFoldingBuilder"/>
 
     </extensions>
 
