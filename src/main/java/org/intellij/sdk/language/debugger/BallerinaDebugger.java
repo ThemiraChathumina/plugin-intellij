@@ -51,7 +51,7 @@ public class BallerinaDebugger extends GenericProgramRunner {
             int port = findFreePort();
             System.out.println("port: " + port);
             FileDocumentManager.getInstance().saveAllDocuments();
-
+        System.out.println(state.toString());
             return XDebuggerManager.getInstance(env.getProject()).startSession(env, new XDebugProcessStarter() {
 
                 @NotNull
@@ -67,6 +67,7 @@ public class BallerinaDebugger extends GenericProgramRunner {
                             env.getProject(), entryFilePath, host, port);
                     BallerinaDebugProcess process = new BallerinaDebugProcess(session, ballerinaDebugSession,
                             getExecutionResults(state, env));
+//                    BallerinaDebugProcess process = new BallerinaDebugProcess(session, ballerinaDebugSession, null);
                     ballerinaDebugSession.setContext(process);
                     return process;
                 }
@@ -162,7 +163,8 @@ public class BallerinaDebugger extends GenericProgramRunner {
     private static int findFreePort() {
         try (ServerSocket socket = new ServerSocket(0)) {
             socket.setReuseAddress(true);
-            return socket.getLocalPort();
+//            return socket.getLocalPort();
+            return 8081;
         } catch (Exception ignore) {
         }
         throw new IllegalStateException("Could not find a free TCP/IP port to start debugging");

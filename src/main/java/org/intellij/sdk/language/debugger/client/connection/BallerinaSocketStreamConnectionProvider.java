@@ -35,8 +35,11 @@ public class BallerinaSocketStreamConnectionProvider extends BallerinaProcessStr
     public void start() throws IOException {
         Thread socketThread = new Thread(() -> {
             try {
+                System.out.println("Connecting to the debug server at " + address + ":" + port + "...");
                 socket = new Socket(address, port);
+                System.out.println(socket.isConnected());
             } catch (Exception e) {
+                System.out.println("Error occurred while connecting to the debug server.");
                 LOG.warn(e);
             }
         });

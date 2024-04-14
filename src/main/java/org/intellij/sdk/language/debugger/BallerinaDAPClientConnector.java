@@ -117,6 +117,8 @@ public class BallerinaDAPClientConnector {
             initializeFuture = debugServer.initialize(initParams).thenApply(res -> {
                 initializeResult = res;
                 LOG.info("initialize response received from the debug server.");
+                System.out.println("initialize response received from the debug server.");
+                System.out.println(initializeFuture);
                 debugClient.initialized();
                 requestManager = new DAPRequestManager(this, debugClient, debugServer, initializeResult);
                 debugClient.connect(requestManager);
@@ -135,15 +137,27 @@ public class BallerinaDAPClientConnector {
         return String.format("host:%s and port: %d", host, port);
     }
 
+    void launchServer() {
+        try {
+            Map<String, Object> requestArgs = new HashMap<>();
+            requestArgs.put(CONFIG_SOURCE, entryFilePath);
+            requestArgs.put(CONFIG_DEBUGEE_HOST, host);
+            requestArgs.put(CONFIG_DEBUGEE_PORT, Integer.toString(port));
+
+            requestManager.launch(requestArgs);
+        } catch (Exception e) {
+            LOG.warn("Attaching to the debug adapter failed", e);
+        }
+    }
+
     void attachToServer() {
         try {
             Map<String, Object> requestArgs = new HashMap<>();
             requestArgs.put(CONFIG_SOURCE, entryFilePath);
             requestArgs.put(CONFIG_DEBUGEE_HOST, host);
             requestArgs.put(CONFIG_DEBUGEE_PORT, Integer.toString(port));
-            System.out.println("entryFilePath: " + entryFilePath);
+
             requestManager.attach(requestArgs);
-            System.out.println("attach request sent to the debug server.");
         } catch (Exception e) {
             LOG.warn("Attaching to the debug adapter failed", e);
         }
@@ -191,10 +205,10 @@ public class BallerinaDAPClientConnector {
     private BallerinaStreamConnectionProvider createConnectionProvider(Project project) {
 
         String debugLauncherPath = "C:\\Program Files\\Ballerina\\distributions\\ballerina-2201.8.4\\bin\\bal.bat";
-        String command = "start-debugger-adapter";
+        String command1 = "start-debugger-adapter";
         List<String> processArgs = new ArrayList<>();
         processArgs.add(debugLauncherPath);
-        processArgs.add(command);
+        processArgs.add(command1);
         processArgs.add(Integer.toString(debugAdapterPort));
         System.out.println(processArgs);
         return new BallerinaSocketStreamConnectionProvider(processArgs, project.getBasePath(), host, debugAdapterPort);
@@ -203,7 +217,8 @@ public class BallerinaDAPClientConnector {
     private static int findFreePort() {
         try (ServerSocket socket = new ServerSocket(0)) {
             socket.setReuseAddress(true);
-            return socket.getLocalPort();
+//            return socket.getLocalPort();
+            return 8080;
         } catch (Exception ignore) {
         }
         throw new IllegalStateException("Could not find a free TCP/IP port to start debugging");

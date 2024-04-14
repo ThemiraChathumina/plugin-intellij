@@ -39,7 +39,7 @@ public class DAPRequestManager {
     private final Capabilities serverCapabilities;
 
     private static final int TIMEOUT_SET_BREAKPOINTS = 2000;
-    private static final int TIMEOUT_CONFIG_DONE = 1000;
+    private static final int TIMEOUT_CONFIG_DONE = 2000;
     private static final int TIMEOUT_THREADS = 2000;
     private static final int TIMEOUT_STACK_TRACE = 2000;
     private static final int TIMEOUT_SCOPES = 2000;
@@ -76,6 +76,15 @@ public class DAPRequestManager {
         if (checkStatus()) {
             CompletableFuture<Void> resp = server.configurationDone(args);
             resp.get(TIMEOUT_CONFIG_DONE, TimeUnit.MILLISECONDS);
+        } else {
+            throw new IllegalStateException("DAP request manager is not active");
+        }
+    }
+
+    public void launch(Map<String, Object> args) throws Exception {
+        if (checkStatus()) {
+            CompletableFuture<Void> resp = server.launch(args);
+            resp.get(TIMEOUT_CONFIG_DONE,TimeUnit.MILLISECONDS);
         } else {
             throw new IllegalStateException("DAP request manager is not active");
         }

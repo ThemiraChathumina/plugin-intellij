@@ -75,6 +75,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
             TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
             LOGGER.debug("WebSocket Client received text message: " + textFrame.text());
             String textReceived = textFrame.text();
+            System.out.println(textReceived);
             callback.call(textReceived);
         } else if (frame instanceof CloseWebSocketFrame) {
             isConnected = false;

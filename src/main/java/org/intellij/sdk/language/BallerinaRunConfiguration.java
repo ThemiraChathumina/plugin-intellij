@@ -119,10 +119,13 @@ public class BallerinaRunConfiguration extends RunConfigurationBase<BallerinaRun
                     script = ballerinaPackage;
                 }
 
-
                 String lastPath = getLastFolderOrFile(script);
+                System.out.println("Last Path: " + lastPath);
                 String parentPath = getParentPath(script);
+                System.out.println("Parent Path: " + parentPath);
 
+//                GeneralCommandLine commandLine =
+//                        new GeneralCommandLine(BalPath,"run","--debug","8081",lastPath);
                 GeneralCommandLine commandLine =
                         new GeneralCommandLine(BalPath,"run",lastPath);
                 commandLine.setWorkDirectory(parentPath);

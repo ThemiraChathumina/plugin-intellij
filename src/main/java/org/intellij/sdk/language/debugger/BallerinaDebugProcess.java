@@ -137,7 +137,7 @@ public class BallerinaDebugProcess extends XDebugProcess {
                         // Waiting to make the connection with the debug server until the ballerina program execution
                         // is started and then suspended.
                         System.out.println("Debug process output: " + event.getText());
-                        if (!isReadyToConnect) {
+                        if (!isReadyToConnect && event.getText().contains("Listening for transport dt_socket")) {
                             isReadyToConnect = true;
                             System.out.println("Ready to connect.");
                             initDebugSession();
@@ -527,7 +527,20 @@ public class BallerinaDebugProcess extends XDebugProcess {
             if (!isConnected) {
                 return;
             }
+
             ApplicationManager.getApplication().invokeLater(() -> {
+//                if (attach) {
+//                    try {
+//                        // Sends "configuration done" notification to the debug server.
+//                        dapClientConnector.getRequestManager().configurationDone(new ConfigurationDoneArguments());
+//                    } catch (Exception e) {
+//                        LOGGER.warn("Configuration done request failed.", e);
+//                    }
+//                    // Sends attach request to the debug server.
+//                    LOGGER.debug("Sending Attach command.");
+////                    dapClientConnector.attachToServer();
+//                    dapClientConnector.launchServer();
+//                }
                 Map<Source, List<SourceBreakpoint>> sourceBreakpoints = new HashMap<>();
                 if (getSession().areBreakpointsMuted()) {
                     return;
@@ -571,6 +584,7 @@ public class BallerinaDebugProcess extends XDebugProcess {
                     // Sends attach request to the debug server.
                     LOGGER.debug("Sending Attach command.");
                     dapClientConnector.attachToServer();
+//                    dapClientConnector.launchServer();
                 }
             });
         }
