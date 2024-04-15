@@ -11,6 +11,7 @@ import io.ballerina.plugins.idea.runconfig.BallerinaRunState;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkDetection;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,8 +29,9 @@ public class BallerinaApplicationRunningState extends BallerinaRunState {
             script = ballerinaPackage;
         }
 
-        String lastPath = getLastFolderOrFile(script);
-        String parentPath = getParentPath(script);
+        String lastPath = Paths.get(script).normalize().getFileName().toString();
+        String parentPath = Paths.get(script).normalize().getParent().toString();
+
         GeneralCommandLine commandLine = new GeneralCommandLine(balPath, "run");
 
         if (isDebugging) {

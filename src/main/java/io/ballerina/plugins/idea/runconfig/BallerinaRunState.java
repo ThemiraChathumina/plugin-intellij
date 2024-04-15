@@ -24,37 +24,6 @@ public class BallerinaRunState extends CommandLineState {
         this.script = script;
     }
 
-    public static String getLastFolderOrFile(String path) {
-        if (path == null || path.isEmpty()) {
-            return null;
-        }
-
-        String normalizedPath = path.replaceAll("[/\\\\]+", "/");
-
-        normalizedPath = normalizedPath.replaceAll("/$", "");
-
-        String[] parts = normalizedPath.split("/");
-        return parts.length > 0 ? parts[parts.length - 1] : null;
-    }
-
-    public static String getParentPath(String path) {
-        if (path == null || path.isEmpty()) {
-            return null;
-        }
-
-        String normalizedPath = path.replaceAll("[/\\\\]+", "/");
-
-        normalizedPath = normalizedPath.replaceAll("/$", "");
-
-        int lastSeparatorIndex = normalizedPath.lastIndexOf('/');
-
-        if (lastSeparatorIndex <= 0) {
-            return null;
-        }
-
-        return normalizedPath.substring(0, lastSeparatorIndex);
-    }
-
     public void enableDebugging() {
         isDebugging = true;
     }
@@ -63,7 +32,7 @@ public class BallerinaRunState extends CommandLineState {
         this.port = port;
     }
 
-    public String getScript(){
+    public String getScript() {
         return script;
     }
 
