@@ -63,6 +63,10 @@ public class BallerinaRunState extends CommandLineState {
         this.port = port;
     }
 
+    public String getScript(){
+        return script;
+    }
+
     @Override
     protected @NotNull ProcessHandler startProcess() throws ExecutionException {
         return null;
