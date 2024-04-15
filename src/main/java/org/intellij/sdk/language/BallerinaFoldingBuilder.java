@@ -34,11 +34,15 @@ public class BallerinaFoldingBuilder extends CustomFoldingBuilder implements Dum
         if (!(psiElement instanceof BallerinaFile)) {
             return;
         }
-        matchPair(list,psiElement, BallerinaTypes.OPEN_BRACE_TOKEN, BallerinaTypes.CLOSE_BRACE_TOKEN);
-        matchPair(list,psiElement, BallerinaTypes.OPEN_NESTED_BRACE_TOKEN, BallerinaTypes.CLOSE_NESTED_BRACE_TOKEN);
-        matchPair(list,psiElement, BallerinaTypes.IGNORED_OPEN_BRACE_TOKEN, BallerinaTypes.IGNORED_CLOSE_BRACE_TOKEN);
-        matchPair(list,psiElement, BallerinaTypes.OPEN_BRACE_PIPE_TOKEN, BallerinaTypes.CLOSE_BRACE_PIPE_TOKEN);
-        matchPair(list,psiElement, BallerinaTypes.OPEN_NESTED_BRACE_PIPE_TOKEN, BallerinaTypes.CLOSE_NESTED_BRACE_PIPE_TOKEN);
+        matchPair(list, psiElement, BallerinaTypes.OPEN_BRACE_TOKEN, BallerinaTypes.CLOSE_BRACE_TOKEN, "{...}");
+        matchPair(list, psiElement, BallerinaTypes.OPEN_NESTED_BRACE_TOKEN, BallerinaTypes.CLOSE_NESTED_BRACE_TOKEN,
+                "{...}");
+        matchPair(list, psiElement, BallerinaTypes.IGNORED_OPEN_BRACE_TOKEN, BallerinaTypes.IGNORED_CLOSE_BRACE_TOKEN,
+                "{...}");
+        matchPair(list, psiElement, BallerinaTypes.OPEN_BRACE_PIPE_TOKEN, BallerinaTypes.CLOSE_BRACE_PIPE_TOKEN,
+                "{|...|}");
+        matchPair(list, psiElement, BallerinaTypes.OPEN_NESTED_BRACE_PIPE_TOKEN,
+                BallerinaTypes.CLOSE_NESTED_BRACE_PIPE_TOKEN, "{|...|}");
         buildImportFoldingRegion(list, psiElement);
         buildDocumentationFoldingRegions(list,psiElement);
         buildMultiCommentFoldingRegions(list, psiElement);
@@ -46,8 +50,8 @@ public class BallerinaFoldingBuilder extends CustomFoldingBuilder implements Dum
 //        buildAnnotFoldingRegions(list, psiElement);
     }
 
-
-    private void matchPair(List<FoldingDescriptor> list, PsiElement psiElement, IElementType open, IElementType close){
+    private void matchPair(List<FoldingDescriptor> list, PsiElement psiElement, IElementType open, IElementType close,
+                           String placeholder) {
         List<PsiElement> leaves = new ArrayList<>();
         Stack<PsiElement> stack = new Stack<>();
         stack.push(psiElement);
@@ -77,7 +81,8 @@ public class BallerinaFoldingBuilder extends CustomFoldingBuilder implements Dum
                 int startOffset = openBrace.getTextRange().getStartOffset();
                 int endOffset = leaf.getTextRange().getEndOffset();
                 if (endOffset > startOffset){
-                    list.add(new FoldingDescriptor(openBrace.getNode(), new TextRange(startOffset, endOffset), null,"{...}"));
+                    list.add(new FoldingDescriptor(openBrace.getNode(), new TextRange(startOffset, endOffset), null,
+                            placeholder));
                 }
             }
         }
