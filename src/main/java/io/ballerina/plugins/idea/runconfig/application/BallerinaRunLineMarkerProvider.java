@@ -29,7 +29,7 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
     @Nullable
     @Override
     public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element) {
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(element.getProject());
         if (version != null && isMainFunction(element) || isService(element)) {
             return createRunLineMarkerInfo(element);
         }

@@ -30,7 +30,7 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
     @Nullable
     @Override
     public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element) {
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(element.getProject());
         if (version != null && isTestFunction(element) && (isPackageTest(element) || isModuleTest(element))) {
             return createTestLineMarkerInfo(element);
         }

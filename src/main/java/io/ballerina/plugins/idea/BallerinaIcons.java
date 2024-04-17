@@ -31,4 +31,6 @@ import javax.swing.Icon;
 public class BallerinaIcons {
 
     public static final Icon FILE = IconLoader.getIcon("/icons/BallerinaIcon.png", BallerinaIcons.class);
+
+    public static final Icon HEADLINE = IconLoader.getIcon("/icons/ballerina-logo-grey.svg", BallerinaIcons.class);
 }

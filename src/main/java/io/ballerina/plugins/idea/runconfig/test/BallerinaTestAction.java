@@ -117,7 +117,7 @@ public class BallerinaTestAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(e.getProject());
 
         if (file == null || !file.getName().endsWith(".bal") || version == null) {
             e.getPresentation().setVisible(false);

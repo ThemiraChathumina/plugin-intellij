@@ -6,11 +6,16 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class BallerinaSdkDetection {
+
+    private static List<MiniSdk> availableSdks;
 
     public static String runCommand(String cmd) {
         SlowOperations.assertSlowOperationsAreAllowed();
@@ -92,5 +97,96 @@ public class BallerinaSdkDetection {
         }
 
         return "";
+    }
+
+    public static boolean isValidPath(String path) {
+        if (path == null) {
+            return false;
+        }
+
+        File file = new File(path);
+        if (!file.exists()) {
+            return false;
+        }
+
+        String osName = System.getProperty("os.name").toLowerCase();
+        String executableName = file.getName();
+
+        if ((osName.contains("win") && !executableName.equals("bal.bat")) ||
+                (!osName.contains("win") && !executableName.equals("bal"))) {
+            return false;
+        }
+
+        return file.canExecute();
+    }
+
+    public static boolean isValidVersion(String version) {
+        return version != null;
+    }
+
+    public static boolean isValidSdk(String path, String version) {
+        return isValidPath(path) && isValidVersion(version);
+    }
+
+    public static List<MiniSdk> getSdks() {
+        if (availableSdks != null && !availableSdks.isEmpty()) {
+            return availableSdks;
+        }
+        String osName = System.getProperty("os.name").toLowerCase();
+        List<MiniSdk> sdkList = new ArrayList<>();
+        File sdkDir = new File(getBallerinaPath());
+        File distRoot = sdkDir.getParentFile().getParentFile().getParentFile();
+        File[] files = distRoot.listFiles(
+                (current, name) -> new File(current, name).isDirectory() && name.startsWith("ballerina-"));
+        if (files != null) {
+            for (File file : files) {
+                String version = file.getName();
+                String executableName = osName.contains("win") ? "bal.bat" : "bal";
+                Path sdkPath = Paths.get(file.getAbsolutePath(), "bin", executableName);
+                if (isValidSdk(sdkPath.toString(), version)) {
+                    sdkList.add(new MiniSdk(sdkPath.toString(), version));
+                }
+            }
+        }
+        if (availableSdks == null || availableSdks.isEmpty()) {
+            availableSdks = sdkList;
+        }
+        return sdkList;
+    }
+
+    public static String getSdkPath(String version) {
+        if (availableSdks == null || availableSdks.isEmpty()) {
+            return "";
+        }
+        for (MiniSdk miniSdk: availableSdks) {
+            if (Objects.equals(miniSdk.version, version)) {
+                return miniSdk.path;
+            }
+        }
+        return "";
+    }
+
+    public static class MiniSdk {
+
+        private final String path;
+        private final String version;
+
+        public MiniSdk(String path, String version) {
+            this.path = path;
+            this.version = version;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        @Override
+        public String toString() {
+            return version + '-' + path;
+        }
     }
 }

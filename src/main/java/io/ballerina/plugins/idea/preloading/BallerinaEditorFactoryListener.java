@@ -51,7 +51,9 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
                 if (widget != null) {
                     ApplicationManager.getApplication().invokeLater(() -> widget.setMessage("Detecting Ballerina.."));
                 }
-                String balVersion = BallerinaSdkService.getInstance().getBallerinaVersion();
+                String balVersion = BallerinaSdkService.getInstance().getBallerinaVersion(project);
+                System.out.println(balVersion);
+                System.out.println(project.getName());
                 if (widget != null) {
                     ApplicationManager.getApplication().invokeLater(() -> widget.setMessage(""));
                 }

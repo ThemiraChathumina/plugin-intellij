@@ -84,7 +84,7 @@ public class BallerinaRunFileAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(e.getProject());
         boolean visible = file != null && (file.getName().endsWith(".bal") | file.isDirectory()) && version != null;
         if (visible) {
             String fileName = file.getName();

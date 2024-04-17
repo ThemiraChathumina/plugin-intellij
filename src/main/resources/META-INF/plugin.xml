@@ -73,6 +73,9 @@
                            toolWindowId=""
                            isLogByDefault="true"/>
 
+        <lang.foldingBuilder language="Ballerina"
+                             implementationClass="io.ballerina.plugins.idea.editor.BallerinaFoldingBuilder"/>
+
         <configurationType
                 implementation="io.ballerina.plugins.idea.runconfig.application.BallerinaApplicationRunConfigType"/>
 
@@ -86,6 +89,22 @@
         <codeInsight.lineMarkerProvider
                 language="Ballerina"
                 implementationClass="io.ballerina.plugins.idea.runconfig.test.BallerinaTestLineMarkerProvider"/>
+
+        <programRunner id="ballerinaDebugger"
+                       implementation="io.ballerina.plugins.idea.debugger.BallerinaDebugger"/>
+
+        <xdebugger.breakpointType
+                implementation="io.ballerina.plugins.idea.debugger.breakpoint.BallerinaBreakPointType"/>
+
+        <projectService
+                serviceImplementation="io.ballerina.plugins.idea.sdk.BallerinaSettingsService"/>
+
+        <moduleType
+                id="BALLERINA_MODULE_TYPE"
+                implementationClass="io.ballerina.plugins.idea.project.BallerinaModuleType"/>
+
+        <projectConfigurable groupId="language" instance="io.ballerina.plugins.idea.project.BallerinaSettingsConfigurable" displayName="Ballerina"/>
+
     </extensions>
     <actions>
         <action id="io.ballerina.plugins.idea.runconfig.application.BallerinaRunFileAction"

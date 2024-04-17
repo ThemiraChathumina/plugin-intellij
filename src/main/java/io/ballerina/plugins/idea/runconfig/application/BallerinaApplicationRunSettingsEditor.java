@@ -2,6 +2,7 @@ package io.ballerina.plugins.idea.runconfig.application;
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.SettingsEditor;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.util.ui.FormBuilder;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
@@ -17,12 +18,12 @@ public class BallerinaApplicationRunSettingsEditor extends SettingsEditor<Baller
     private final TextFieldWithBrowseButton scriptPathField;
     private final JTextField ballerinaSdkField; // Changed to JTextField
 
-    public BallerinaApplicationRunSettingsEditor() {
+    public BallerinaApplicationRunSettingsEditor(Project project) {
         scriptPathField = new TextFieldWithBrowseButton();
         scriptPathField.addBrowseFolderListener("Select Run Source", null, null,
                 FileChooserDescriptorFactory.createSingleFileDescriptor());
 
-        String balVersion = BallerinaSdkService.getInstance().getBallerinaVersion();
+        String balVersion = BallerinaSdkService.getInstance().getBallerinaVersion(project);
         ballerinaSdkField = new JTextField(); // Initialize as JTextField
         if (balVersion != null) {
             ballerinaSdkField.setText(balVersion);
