@@ -12,7 +12,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import io.ballerina.plugins.idea.BallerinaIcons;
-import io.ballerina.plugins.idea.sdk.BallerinaSdkDetection;
+import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,7 +33,7 @@ public class BallerinaRunFileAction extends AnAction {
 
             String fileName = file.getName();
             String path = file.getPath();
-            String packagePath = BallerinaSdkDetection.findBallerinaPackage(path);
+            String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             if (!packagePath.isEmpty()) {
                 ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));
                 fileName = pathList.get(pathList.size() - 1);
@@ -45,7 +45,7 @@ public class BallerinaRunFileAction extends AnAction {
             BallerinaApplicationRunConfiguration runConfiguration =
                     (BallerinaApplicationRunConfiguration) settings.getConfiguration();
             String script = file.getPath();
-            String ballerinaPackage = BallerinaSdkDetection.findBallerinaPackage(script);
+            String ballerinaPackage = BallerinaProjectUtil.findBallerinaPackage(script);
             if (!ballerinaPackage.isEmpty()) {
                 script = ballerinaPackage;
             }
@@ -89,7 +89,7 @@ public class BallerinaRunFileAction extends AnAction {
         if (visible) {
             String fileName = file.getName();
             String path = file.getPath();
-            String packagePath = BallerinaSdkDetection.findBallerinaPackage(path);
+            String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             String packageName = null;
             if (!packagePath.isEmpty()) {
                 ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));

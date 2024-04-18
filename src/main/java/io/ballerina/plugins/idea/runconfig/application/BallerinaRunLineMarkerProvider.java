@@ -14,7 +14,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import io.ballerina.plugins.idea.sdk.BallerinaSdkDetection;
+import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +27,7 @@ import java.util.Objects;
 public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
 
     @Nullable
+
     @Override
     public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element) {
         String version = BallerinaSdkService.getInstance().getBallerinaVersion();
@@ -71,7 +72,7 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
         String packageName;
         if (virtualFile != null) {
             String path = virtualFile.getPath();
-            String packagePath = BallerinaSdkDetection.findBallerinaPackage(path);
+            String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             if (!packagePath.isEmpty()) {
                 ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));
                 packageName = pathList.get(pathList.size() - 1);
@@ -105,7 +106,7 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
                         BallerinaApplicationRunConfiguration runConfiguration =
                                 (BallerinaApplicationRunConfiguration) settings.getConfiguration();
                         String script = file.getPath();
-                        String ballerinaPackage = BallerinaSdkDetection.findBallerinaPackage(script);
+                        String ballerinaPackage = BallerinaProjectUtil.findBallerinaPackage(script);
                         if (!ballerinaPackage.isEmpty()) {
                             script = ballerinaPackage;
                         }

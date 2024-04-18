@@ -1,9 +1,5 @@
 package io.ballerina.plugins.idea.sdk;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 
 public class BallerinaSdkService {
@@ -12,10 +8,13 @@ public class BallerinaSdkService {
     private final String ballerinaVersion;
     private final String ballerinaPath;
 
+    private final List<BallerinaSdkUtil.BallerinaSdk> sdkList;
+
     private BallerinaSdkService() {
         // This code will only run once when the IDE starts and the first access to BallerinaSdkService occurs
-        ballerinaVersion = BallerinaSdkDetection.getBallerinaVersion();
-        ballerinaPath = BallerinaSdkDetection.getBallerinaPath();
+        ballerinaVersion = BallerinaSdkUtil.getBallerinaVersion();
+        ballerinaPath = BallerinaSdkUtil.getBallerinaPath();
+        sdkList = BallerinaSdkUtil.getBallerinaSdks(ballerinaPath);
     }
 
     public static synchronized BallerinaSdkService getInstance() {
@@ -25,72 +24,40 @@ public class BallerinaSdkService {
         return instance;
     }
 
-    public static void instantiate() {
-        if (instance == null) {
-            instance = new BallerinaSdkService();
-        }
-    }
-
     public String getBallerinaVersion() {
+        BallerinaSdkSettings settings = BallerinaSdkSettings.getInstance();
+        if (settings != null && settings.isUseCustomSdk()) {
+            return settings.getBallerinaSdkVersion();
+        }
         return ballerinaVersion;
     }
 
     public String getBallerinaPath() {
+        BallerinaSdkSettings settings = BallerinaSdkSettings.getInstance();
+        if (settings != null  && settings.isUseCustomSdk()) {
+            return settings.getBallerinaSdkPath();
+        }
         return ballerinaPath;
     }
 
-    public boolean isValidPath(String path) {
-        if (path == null) {
-            return false;
-        } else if (!new File(path).exists()) {
-            return false;
-        } else if (!new File(path).getName().equals("bal.bat")) {
-            return false;
-        } else {
-            return new File(path).canExecute();
+    public String getSystemBalPath() {
+        return ballerinaPath;
+    }
+
+    public String getSystemBalVersion() {
+        return ballerinaVersion;
+    }
+
+    public void setBallerinaSdk(String path, String version) {
+        BallerinaSdkSettings settings = BallerinaSdkSettings.getInstance();
+        if (settings == null) {
+            return;
         }
+        settings.setBallerinaSdkPath(path);
+        settings.setBallerinaSdkVersion(version);
     }
 
-    public boolean isValidVersion(String version) {
-        return version != null;
-    }
-
-    public boolean isValidSdk(String path, String version) {
-        return isValidPath(path) && isValidVersion(version);
-    }
-
-    public List<MiniSdk> getSdks() {
-        List<MiniSdk> sdkList = new ArrayList<>();
-        File sdkDir = new File(ballerinaPath);
-        File distRoot = sdkDir.getParentFile().getParentFile().getParentFile();
-        File[] files = distRoot.listFiles(
-                (current, name) -> new File(current, name).isDirectory() && name.startsWith("ballerina-"));
-        if (files != null) {
-            for (File file : files) {
-                String version = file.getName();
-                Path sdkPath = Paths.get(file.getAbsolutePath(), "bin", "bal.bat");
-                sdkList.add(new MiniSdk(sdkPath.toString(), version));
-            }
-        }
+    public List<BallerinaSdkUtil.BallerinaSdk> getSdkList() {
         return sdkList;
-    }
-
-    public static class MiniSdk {
-
-        private final String path;
-        private final String version;
-
-        public MiniSdk(String path, String version) {
-            this.path = path;
-            this.version = version;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public String getVersion() {
-            return version;
-        }
     }
 }

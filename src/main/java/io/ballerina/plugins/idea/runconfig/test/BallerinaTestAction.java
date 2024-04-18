@@ -12,7 +12,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import io.ballerina.plugins.idea.BallerinaIcons;
-import io.ballerina.plugins.idea.sdk.BallerinaSdkDetection;
+import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,8 +36,8 @@ public class BallerinaTestAction extends AnAction {
         }
 
         String path = file.getPath();
-        String packagePath = BallerinaSdkDetection.findBallerinaPackage(path);
-        String modulePath = BallerinaSdkDetection.findBallerinaModule(path);
+        String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
+        String modulePath = BallerinaProjectUtil.findBallerinaModule(path);
         String fileName = extractFileName(packagePath, modulePath, file.getName());
 
         RunManager runManager = RunManager.getInstance(project);
@@ -125,8 +125,8 @@ public class BallerinaTestAction extends AnAction {
         }
 
         String path = file.getPath();
-        String modulePath = BallerinaSdkDetection.findBallerinaModule(path);
-        String packagePath = BallerinaSdkDetection.findBallerinaPackage(path);
+        String modulePath = BallerinaProjectUtil.findBallerinaModule(path);
+        String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
 
         boolean visibilitySet = setVisibilityForModuleTests(e, modulePath);
 

@@ -17,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 
 public class BallerinaApplicationRunConfiguration extends RunConfigurationBase<BallerinaExecutionConfigOptions> {
 
@@ -36,7 +37,7 @@ public class BallerinaApplicationRunConfiguration extends RunConfigurationBase<B
 
         String ballerinaVersion = BallerinaSdkService.getInstance().getBallerinaVersion();
 
-        if (ballerinaVersion == null) {
+        if (Objects.equals(ballerinaVersion, "")) {
             throw new RuntimeConfigurationException("Ballerina SDK is not detected.");
         }
     }
@@ -62,7 +63,7 @@ public class BallerinaApplicationRunConfiguration extends RunConfigurationBase<B
     public @Nullable RunProfileState getState(@NotNull Executor executor,
                                               @NotNull ExecutionEnvironment executionEnvironment)
             throws ExecutionException {
-        if (BallerinaSdkService.getInstance().getBallerinaVersion() == null) {
+        if (Objects.equals(BallerinaSdkService.getInstance().getBallerinaVersion(), "")) {
             BallerinaNotification.notifyBallerinaNotDetected(executionEnvironment.getProject());
             return null;
         }

@@ -13,8 +13,8 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
 import io.ballerina.plugins.idea.psi.BallerinaPsiUtil;
-import io.ballerina.plugins.idea.sdk.BallerinaSdkDetection;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -114,7 +114,7 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
         String packageName;
         if (virtualFile != null) {
             String path = virtualFile.getPath();
-            String packagePath = BallerinaSdkDetection.findBallerinaPackage(path);
+            String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             if (!packagePath.isEmpty()) {
                 ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));
                 packageName = pathList.get(pathList.size() - 1);
@@ -159,7 +159,7 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
                         BallerinaTestConfiguration testConfiguration =
                                 (BallerinaTestConfiguration) settings.getConfiguration();
                         String script = file.getPath();
-                        String ballerinaPackage = BallerinaSdkDetection.findBallerinaPackage(script);
+                        String ballerinaPackage = BallerinaProjectUtil.findBallerinaPackage(script);
                         if (!ballerinaPackage.isEmpty()) {
                             script = ballerinaPackage;
                         }

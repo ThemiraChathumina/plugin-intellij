@@ -5,6 +5,7 @@ import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 
 public class BallerinaNotification {
@@ -24,6 +25,19 @@ public class BallerinaNotification {
                             BrowserUtil.browse("https://ballerina.io/downloads/");
                         }));
 
+        notification.notify(project);
+    }
+
+    public static void notifyRestartIde(Project project) {
+        Notification notification =
+                NotificationGroupManager.getInstance().getNotificationGroup("Ballerina Plugin Notifications")
+                        .createNotification("Restart the IDE to apply the changes.", NotificationType.INFORMATION)
+                        .setTitle("Restart the IDE to apply the changes.")
+                        .setContent("Please restart the IDE to apply the changes.")
+                        .addAction(NotificationAction.createSimple("Restart", () -> {
+                            // Restart all opened IDEs
+                            ApplicationManager.getApplication().restart();
+                        }));
         notification.notify(project);
     }
 

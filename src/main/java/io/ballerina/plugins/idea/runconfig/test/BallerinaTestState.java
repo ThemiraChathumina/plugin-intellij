@@ -7,8 +7,8 @@ import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.process.ProcessHandlerFactory;
 import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.runners.ExecutionEnvironment;
+import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
 import io.ballerina.plugins.idea.runconfig.BallerinaRunState;
-import io.ballerina.plugins.idea.sdk.BallerinaSdkDetection;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -23,7 +23,7 @@ public class BallerinaTestState extends BallerinaRunState {
 
     @Override
     protected @NotNull ProcessHandler startProcess() throws ExecutionException {
-        String ballerinaPackage = BallerinaSdkDetection.findBallerinaPackage(script);
+        String ballerinaPackage = BallerinaProjectUtil.findBallerinaPackage(script);
         if (!ballerinaPackage.isEmpty()) {
             script = ballerinaPackage;
         }
