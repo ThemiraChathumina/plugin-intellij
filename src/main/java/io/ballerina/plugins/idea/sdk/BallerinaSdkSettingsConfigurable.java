@@ -127,8 +127,6 @@ public class BallerinaSdkSettingsConfigurable implements Configurable {
                         selectedVersionTextField.setForeground(JBColor.RED);
                     }
                 }
-                // Reset the selection to the prompt
-                sdkVersionComboBox.setSelectedIndex(0);
             } else {
                 String path = (String) sdkVersionComboBox.getSelectedItem();
                 if (Objects.equals(path, "System default: " + systemBalPath)) {
