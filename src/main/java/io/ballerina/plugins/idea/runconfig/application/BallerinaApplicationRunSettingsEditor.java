@@ -32,7 +32,7 @@ public class BallerinaApplicationRunSettingsEditor extends SettingsEditor<Baller
         FormBuilder formbuilder = FormBuilder.createFormBuilder()
                 .addLabeledComponent("Run source", scriptPathField);
 
-        formbuilder.addLabeledComponent("Ballerina SDK", ballerinaSdkField);
+        formbuilder.addLabeledComponent("Ballerina SDK version", ballerinaSdkField);
 
         myPanel = formbuilder.getPanel();
     }
@@ -53,3 +53,5 @@ public class BallerinaApplicationRunSettingsEditor extends SettingsEditor<Baller
         return myPanel;
     }
 }
+
+
