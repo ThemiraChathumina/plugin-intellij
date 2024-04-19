@@ -16,6 +16,13 @@ import io.ballerina.plugins.idea.widget.BallerinaIconWidget;
 import io.ballerina.plugins.idea.widget.BallerinaIconWidgetFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.wso2.lsp4intellij.IntellijLanguageClient;
+import org.wso2.lsp4intellij.client.languageserver.serverdefinition.ProcessBuilderServerDefinition;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class BallerinaEditorFactoryListener implements EditorFactoryListener {
 
@@ -46,6 +53,7 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
         }
         VirtualFile file = FileDocumentManager.getInstance().getFile(event.getEditor().getDocument());
         if (!balSourcesFound && project.equals(this.project) && isBalFile(file)) {
+            doRegister(project);
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
                 BallerinaDetectionWidget widget = BallerinaDetectionWidgetFactory.getWidget(project);
                 if (widget != null) {
@@ -73,5 +81,18 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
             });
             balSourcesFound = true;
         }
+    }
+
+    private static void doRegister(@NotNull Project project) {
+        List<String> args = new ArrayList<>();
+        args.add("C:\\Program Files\\Ballerina\\distributions\\ballerina-2201.8.4\\bin\\bal.bat");
+        args.add("start-language-server");
+        ProcessBuilder processBuilder = new ProcessBuilder(args);
+        processBuilder.directory(new File(Objects.requireNonNull(project.getBasePath())));
+
+        // Registers language server definition in the lsp4intellij lang-client library.
+        IntellijLanguageClient.addServerDefinition(new ProcessBuilderServerDefinition("bal", processBuilder),
+                project);
+
     }
 }
