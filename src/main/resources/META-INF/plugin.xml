@@ -74,7 +74,7 @@
                            isLogByDefault="true"/>
         <applicationService serviceImplementation="io.ballerina.plugins.idea.sdk.BallerinaSdkSettings"/>
         <projectConfigurable groupId="language"
-                             instance="io.ballerina.plugins.idea.sdk.BallerinaSdkSettingsConfigurable"
+                             instance="io.ballerina.plugins.idea.configuration.BallerinaLanguageSettingsConfigurable"
                              displayName="Ballerina"/>
         <configurationType
                 implementation="io.ballerina.plugins.idea.runconfig.application.BallerinaApplicationRunConfigType"/>

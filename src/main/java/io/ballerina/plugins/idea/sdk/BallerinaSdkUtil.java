@@ -154,6 +154,33 @@ public class BallerinaSdkUtil {
         return sdkList;
     }
 
+    public static String findBalDistFolder(String initialPath) {
+        Path currentPath = Paths.get(initialPath);
+        while (currentPath != null) {
+            if (currentPath.getFileName().toString().toLowerCase().contains("ballerina")) {
+                return currentPath.normalize().toString();
+            }
+            currentPath = currentPath.getParent();
+        }
+        return "";
+    }
+
+    public static String getBalBatFromDist(String distPath) {
+        Path path = Paths.get(distPath).normalize();
+        String lastElement = path.getFileName().toString();
+
+        String executableName = "bal";
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            executableName += ".bat";
+        }
+
+        if ("bin".equals(lastElement)) {
+            return path.resolve(executableName).toString();
+        } else {
+            return path.resolve(Paths.get("bin", executableName)).toString();
+        }
+    }
+
     public static class BallerinaSdk {
 
         private final String path;
