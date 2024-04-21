@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.ballerina.plugins.idea.runconfig.application;
 
 import com.intellij.execution.ExecutionException;
@@ -16,32 +33,38 @@ import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.nio.file.Paths;
+import java.util.Objects;
 
+/**
+ * Action for running ballerina application.
+ *
+ * @since 2.0.0
+ */
 public class BallerinaRunFileAction extends AnAction {
 
+    private final String balExtension = ".bal";
+
     public BallerinaRunFileAction() {
-        super(BallerinaIcons.FILE);
+        super(BallerinaIcons.APPLICATION_RUN);
     }
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        if (project != null && file != null && (file.getName().endsWith(".bal") | file.isDirectory())) {
+        if (project != null && file != null && (file.getName().endsWith(balExtension) | file.isDirectory())) {
 
             String fileName = file.getName();
             String path = file.getPath();
             String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             if (!packagePath.isEmpty()) {
-                ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));
-                fileName = pathList.get(pathList.size() - 1);
+                fileName = Paths.get(packagePath).normalize().getFileName().toString();
             }
             RunManager runManager = RunManager.getInstance(project);
-            String temp = fileName.endsWith(".bal") ? fileName.substring(0, fileName.length() - 4) : fileName;
+            String temp = fileName.endsWith(balExtension) ? fileName.substring(0, fileName.length() - 4) : fileName;
             RunnerAndConfigurationSettings settings =
-                    runManager.createConfiguration(temp, BallerinaApplicationRunConfigType.class);
+                    runManager.createConfiguration("Run " + temp, BallerinaApplicationRunConfigType.class);
             BallerinaApplicationRunConfiguration runConfiguration =
                     (BallerinaApplicationRunConfiguration) settings.getConfiguration();
             String script = file.getPath();
@@ -51,7 +74,6 @@ public class BallerinaRunFileAction extends AnAction {
             }
             runConfiguration.setScriptName(script);
 
-            // Check if similar configuration already exists, if not, add the new one
             boolean exists = false;
             for (RunConfiguration existingConfig : runManager.getAllConfigurationsList()) {
                 if (existingConfig instanceof BallerinaApplicationRunConfiguration &&
@@ -60,6 +82,7 @@ public class BallerinaRunFileAction extends AnAction {
                                 .equals(runConfiguration.getScriptName())) {
                     exists = true;
                     settings = runManager.findSettings(existingConfig);
+                    runConfiguration = (BallerinaApplicationRunConfiguration) existingConfig;
                     break;
                 }
             }
@@ -84,16 +107,17 @@ public class BallerinaRunFileAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
-        boolean visible = file != null && (file.getName().endsWith(".bal") | file.isDirectory()) && version != null;
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(e.getProject());
+        boolean visible =
+                file != null && (file.getName().endsWith(balExtension) | file.isDirectory())
+                        && !Objects.equals(version, "");
         if (visible) {
             String fileName = file.getName();
             String path = file.getPath();
             String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             String packageName = null;
             if (!packagePath.isEmpty()) {
-                ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));
-                packageName = pathList.get(pathList.size() - 1);
+                packageName = Paths.get(packagePath).normalize().getFileName().toString();
                 fileName = "package " + packageName;
             }
             if (!file.isDirectory() || (file.isDirectory() && file.getName().equals(packageName))) {

@@ -57,9 +57,13 @@
         <highlightErrorFilter implementation="io.ballerina.plugins.idea.editor.BallerinaHighlightErrorFilter"
                               id="BallerinaHighlightErrorFilter"/>
 
-        <preloadingActivity
-                implementation="io.ballerina.plugins.idea.preloading.BallerinaPreloadingActivity"
-                id="org.intellij.sdk.language.BallerinaPreloadingActivity"/>
+<!--        <preloadingActivity-->
+<!--                implementation="io.ballerina.plugins.idea.preloading.BallerinaPreloadingActivity"-->
+<!--                id="io.ballerina.plugins.idea.preloading.BallerinaPreloadingActivity"/>-->
+
+<!--        <postStartupActivity implementation="io.ballerina.plugins.idea.preloading.BallerinaStartupActivity"/>-->
+
+        <editorFactoryListener implementation="io.ballerina.plugins.idea.preloading.BallerinaEditorFactoryListener"/>
 
         <statusBarWidgetFactory
                 implementation="io.ballerina.plugins.idea.widget.BallerinaDetectionWidgetFactory"
@@ -72,7 +76,9 @@
                            displayType="BALLOON"
                            toolWindowId=""
                            isLogByDefault="true"/>
+
         <applicationService serviceImplementation="io.ballerina.plugins.idea.sdk.BallerinaSdkSettings"/>
+
         <projectConfigurable groupId="language"
                              instance="io.ballerina.plugins.idea.configuration.BallerinaLanguageSettingsConfigurable"
                              displayName="Ballerina"/>
@@ -117,12 +123,12 @@
                            implementationClass="org.wso2.lsp4intellij.contributors.annotator.LSPAnnotator"/>
 
         <!-- needed for Workspace Symbols -->
-        <gotoSymbolContributor implementation="org.wso2.lsp4intellij.contributors.symbol.LSPSymbolContributor"
-                               id="LSPSymbolContributor"/>
+<!--        <gotoSymbolContributor implementation="org.wso2.lsp4intellij.contributors.symbol.LSPSymbolContributor"-->
+<!--                               id="LSPSymbolContributor"/>-->
 
         <!-- needed for renaming -->
-        <!--        <renameHandler implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameHandler" id="LSPRenameHandler" order="first"/>-->
-        <renamePsiElementProcessor implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameProcessor" id="LSPRenameProcessor" order="first"/>
+<!--                <renameHandler implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameHandler" id="LSPRenameHandler" order="first"/>-->
+<!--        <renamePsiElementProcessor implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameProcessor" id="LSPRenameProcessor" order="first"/>-->
 
 
         <notificationGroup id="LSPProgressNotification"
@@ -147,14 +153,14 @@
         </action>
 
         <!-- needed for find references -->
-        <action class="org.wso2.lsp4intellij.actions.LSPReferencesAction" id="LSPFindUsages">
-            <keyboard-shortcut first-keystroke="shift alt F7" keymap="$default"/>
-        </action>
-        <action class="org.wso2.lsp4intellij.actions.LSPReformatAction" id="ReformatCode"
-                use-shortcut-of="ReformatCode"
-                overrides="true" text="Reformat Code"/>
-        <action class="org.wso2.lsp4intellij.actions.LSPShowReformatDialogAction" id="ShowReformatFileDialog"
-                use-shortcut-of="ShowReformatFileDialog" overrides="true" text="Show Reformat File Dialog"/>
+<!--        <action class="org.wso2.lsp4intellij.actions.LSPReferencesAction" id="LSPFindUsages">-->
+<!--            <keyboard-shortcut first-keystroke="shift alt F7" keymap="$default"/>-->
+<!--        </action>-->
+<!--        <action class="org.wso2.lsp4intellij.actions.LSPReformatAction" id="ReformatCode"-->
+<!--                use-shortcut-of="ReformatCode"-->
+<!--                overrides="true" text="Reformat Code"/>-->
+<!--        <action class="org.wso2.lsp4intellij.actions.LSPShowReformatDialogAction" id="ShowReformatFileDialog"-->
+<!--                use-shortcut-of="ShowReformatFileDialog" overrides="true" text="Show Reformat File Dialog"/>-->
     </actions>
     <applicationListeners>
         <!-- required for lsp file sync -->
@@ -162,7 +168,7 @@
                   topic="com.intellij.openapi.vfs.VirtualFileListener"/>
         <listener class="org.wso2.lsp4intellij.listeners.LSPProjectManagerListener"
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
-        <!--        <listener class="org.wso2.lsp4intellij.listeners.LSPFileEditorListener"-->
-        <!--                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>-->
+<!--                <listener class="org.wso2.lsp4intellij.listeners.LSPFileEditorListener"-->
+<!--                          topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>-->
     </applicationListeners>
 </idea-plugin>

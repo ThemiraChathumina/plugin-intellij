@@ -71,6 +71,7 @@ public class BallerinaFoldingBuilder extends CustomFoldingBuilder implements Dum
                 }
             }
         }
+
         Stack<PsiElement> openBraces = new Stack<>();
         for (PsiElement leaf : leaves) {
             if (leaf.getNode().getElementType() == open) {

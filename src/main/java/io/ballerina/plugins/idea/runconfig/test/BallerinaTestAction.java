@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.ballerina.plugins.idea.runconfig.test;
 
 import com.intellij.execution.ExecutionException;
@@ -17,13 +34,18 @@ import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.nio.file.Paths;
+import java.util.Objects;
 
+/**
+ * Represents Ballerina test action for running ballerina tests.
+ *
+ * @since 2.0.0
+ */
 public class BallerinaTestAction extends AnAction {
 
     public BallerinaTestAction() {
-        super(BallerinaIcons.FILE);
+        super(BallerinaIcons.APPLICATION_TEST);
     }
 
     @Override
@@ -45,22 +67,31 @@ public class BallerinaTestAction extends AnAction {
         RunnerAndConfigurationSettings settings =
                 getConfigurationSettings(runManager, configName, project, path, packagePath, modulePath);
 
-        // Check if similar configuration already exists, if not, add the new one
-        if (!configurationExists(runManager, settings.getConfiguration())) {
+        RunConfiguration runConfiguration = settings.getConfiguration();
+        boolean found = false;
+        for (RunConfiguration existingConfig : runManager.getAllConfigurationsList()) {
+            if (existingConfig instanceof BallerinaTestConfiguration &&
+                    existingConfig.getName().equals(runConfiguration.getName()) &&
+                    ((BallerinaTestConfiguration) existingConfig).getScriptName()
+                            .equals(((BallerinaTestConfiguration) runConfiguration).getScriptName())) {
+                runConfiguration = existingConfig;
+                found = true;
+            }
+        }
+        if (!found) {
             runManager.addConfiguration(settings);
         }
 
         // Select the new configuration in the UI
         runManager.setSelectedConfiguration(settings);
 
-        executeConfiguration(project, settings.getConfiguration());
+        executeConfiguration(project, runConfiguration);
     }
 
     private String extractFileName(String packagePath, String modulePath, String defaultName) {
         String finalPath = !modulePath.isEmpty() ? modulePath : packagePath;
         if (!finalPath.isEmpty()) {
-            ArrayList<String> pathList = new ArrayList<>(Arrays.asList(finalPath.split("\\\\")));
-            return pathList.get(pathList.size() - 1);
+            return Paths.get(finalPath).normalize().getFileName().toString();
         }
         return defaultName;
     }
@@ -88,21 +119,10 @@ public class BallerinaTestAction extends AnAction {
 
         runConfiguration.setScriptName(script);
 
-        runConfiguration.addCommand("--tests " + cmd);
+        runConfiguration.addCommand("--tests");
+        runConfiguration.addProgramArg(cmd);
 
         return settings;
-    }
-
-    private boolean configurationExists(RunManager runManager, RunConfiguration runConfiguration) {
-        for (RunConfiguration existingConfig : runManager.getAllConfigurationsList()) {
-            if (existingConfig instanceof BallerinaTestConfiguration &&
-                    existingConfig.getName().equals(runConfiguration.getName()) &&
-                    ((BallerinaTestConfiguration) existingConfig).getScriptName()
-                            .equals(((BallerinaTestConfiguration) runConfiguration).getScriptName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void executeConfiguration(Project project, RunConfiguration runConfiguration) {
@@ -117,9 +137,9 @@ public class BallerinaTestAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(e.getProject());
 
-        if (file == null || !file.getName().endsWith(".bal") || version == null) {
+        if (file == null || !file.getName().endsWith(".bal") || Objects.equals(version, "")) {
             e.getPresentation().setVisible(false);
             return;
         }

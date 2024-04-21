@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.ballerina.plugins.idea.runconfig.test;
 
 import com.intellij.codeInsight.daemon.LineMarkerInfo;
@@ -7,12 +24,12 @@ import com.intellij.execution.RunManager;
 import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder;
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import io.ballerina.plugins.idea.BallerinaIcons;
 import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
 import io.ballerina.plugins.idea.psi.BallerinaPsiUtil;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
@@ -20,92 +37,24 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.Cursor;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.nio.file.Paths;
 
+/**
+ * Provides gutter icons for test functions.
+ *
+ * @since 2.0.0
+ */
 public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
 
     @Nullable
     @Override
     public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element) {
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
-        if (version != null && isTestFunction(element) && (isPackageTest(element) || isModuleTest(element))) {
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(element.getProject());
+        if (version != null && BallerinaPsiUtil.isTestFunction(element)
+                && (BallerinaProjectUtil.isPackageTest(element) || BallerinaProjectUtil.isModuleTest(element))) {
             return createTestLineMarkerInfo(element);
         }
         return null;
-    }
-
-    private String getFunctionName(PsiElement element) {
-        PsiElement root = element.getParent().getParent().getParent();
-        PsiElement temp = BallerinaPsiUtil.getNextSibling(root);
-        while (temp != null && !temp.toString().equals("PsiElement(BallerinaTokenType.FUNCTION_KEYWORD)")) {
-            temp = BallerinaPsiUtil.getNextSibling(temp);
-        }
-        return temp != null ? BallerinaPsiUtil.getNextSibling(temp).getText() : "";
-    }
-
-    private boolean isTestFunction(@NotNull PsiElement element) {
-        if (Objects.equals(element.getText(), "Config") &&
-                Objects.equals(element.getParent().toString(), "BallerinaAnnotationImpl(ANNOTATION)") &&
-                Objects.equals(element.getParent().getParent().toString(), "BallerinaAnnotsImpl(ANNOTS)") &&
-                Objects.equals(element.getParent().getParent().getParent().toString(),
-                        "BallerinaMetadataImpl(METADATA)") &&
-                Objects.equals(element.getParent().getParent().getParent().getParent().toString(),
-                        "BallerinaFunctionDefnImpl(FUNCTION_DEFN)") &&
-                Objects.equals(element.getParent().getParent().getParent().getParent().getParent().toString(),
-                        "BallerinaOtherDeclImpl(OTHER_DECL)")) {
-            PsiElement prev1 = BallerinaPsiUtil.getPreviousSibling(element);
-            PsiElement prev2 = BallerinaPsiUtil.getPreviousSibling(prev1);
-            PsiElement prev3 = BallerinaPsiUtil.getPreviousSibling(prev2);
-            if (prev1 != null && prev2 != null && prev3 != null) {
-                return prev1.toString().equals("PsiElement(BallerinaTokenType.COLON_TOKEN)") &&
-                        prev2.getText().equals("test") &&
-                        prev3.toString().equals("PsiElement(BallerinaTokenType.AT_TOKEN)");
-            }
-        }
-        return false;
-    }
-
-    private boolean isPackageTest(PsiElement element) {
-        PsiFile containingFile = element.getContainingFile();
-        VirtualFile virtualFile = containingFile != null ? containingFile.getVirtualFile() : null;
-        if (virtualFile != null) {
-            String path = virtualFile.getPath();
-            File current = new File(path);
-            File parent = current.getParentFile();
-            File balToml = new File(parent.getParent(), "Ballerina.toml");
-            return parent.getName().equals("tests") && balToml.exists();
-        }
-        return false;
-    }
-
-    private boolean isModuleTest(PsiElement element) {
-        PsiFile containingFile = element.getContainingFile();
-        VirtualFile virtualFile = containingFile != null ? containingFile.getVirtualFile() : null;
-        if (virtualFile != null) {
-            String path = virtualFile.getPath();
-            File current = new File(path);
-            File parent = current.getParentFile();
-            File grandParent = parent.getParentFile().getParentFile();
-            File balToml = new File(grandParent.getParentFile(), "Ballerina.toml");
-            return parent.getName().equals("tests") && grandParent.getName().equalsIgnoreCase("modules") &&
-                    balToml.exists();
-        }
-        return false;
-    }
-
-    private String getModuleName(PsiElement element) {
-        PsiFile containingFile = element.getContainingFile();
-        VirtualFile virtualFile = containingFile != null ? containingFile.getVirtualFile() : null;
-        if (virtualFile != null) {
-            String path = virtualFile.getPath();
-            File current = new File(path);
-            File parent = current.getParentFile();
-            return parent.getParentFile().getName();
-        }
-        return "";
     }
 
     private LineMarkerInfo createTestLineMarkerInfo(@NotNull PsiElement element) {
@@ -116,8 +65,7 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
             String path = virtualFile.getPath();
             String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             if (!packagePath.isEmpty()) {
-                ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));
-                packageName = pathList.get(pathList.size() - 1);
+                packageName = Paths.get(packagePath).normalize().getFileName().toString();
             } else {
                 packageName = "";
             }
@@ -127,9 +75,8 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
 
         String moduleName;
         if (virtualFile != null) {
-            String path = virtualFile.getPath();
-            if (isModuleTest(element)) {
-                moduleName = getModuleName(element);
+            if (BallerinaProjectUtil.isModuleTest(element)) {
+                moduleName = BallerinaProjectUtil.getModuleName(element);
             } else {
                 moduleName = "";
             }
@@ -137,9 +84,9 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
             moduleName = "";
         }
 
-        return new LineMarkerInfo<>(element, element.getTextRange(), AllIcons.RunConfigurations.TestState.Run,
+        return new LineMarkerInfo<>(element, element.getTextRange(), BallerinaIcons.TEST,
                 // Default run icon
-                psiElement -> "Test " + getFunctionName(element), // Tooltip text when hovering over the run icon
+                psiElement -> "Test " + BallerinaPsiUtil.getFunctionName(element),
                 (e, elt) -> {
 
                     e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -149,7 +96,6 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
 
                     if (file != null && file.getName().endsWith(".bal")) {
 
-                        // Get the RunManager and create a new configuration
                         RunManager runManager = RunManager.getInstance(project);
                         String configName = !packageName.isEmpty() ? packageName : "finalFileName";
                         String temp = configName.endsWith(".bal") ? configName.substring(0, configName.length() - 4) :
@@ -164,12 +110,16 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
                             script = ballerinaPackage;
                         }
                         testConfiguration.setScriptName(script);
-//                        testConfiguration.addCommand("--tests");
-                        if (isModuleTest(element)) {
-                            String cmd = "--tests " + packageName + "." + moduleName + ":" + getFunctionName(element);
-                            testConfiguration.addCommand(cmd);
+                        if (BallerinaProjectUtil.isModuleTest(element)) {
+                            testConfiguration.addCommand("--tests");
+                            String arg = packageName + "." + moduleName + ":"
+                                    + BallerinaPsiUtil.getFunctionName(element);
+                            testConfiguration.addProgramArg(arg);
                         } else {
-                            testConfiguration.addCommand("--tests " + getFunctionName(element));
+                            testConfiguration.addCommand("--tests");
+                            String name = BallerinaPsiUtil.getFunctionName(element);
+                            testConfiguration.addProgramArg(name);
+
                         }
 
                         try {
@@ -179,8 +129,7 @@ public class BallerinaTestLineMarkerProvider implements LineMarkerProvider {
                             throw new RuntimeException(ex);
                         }
                     }
-                }, GutterIconRenderer.Alignment.CENTER, () -> "Test " + getFunctionName(element)
-                // Fallback tooltip text
+                }, GutterIconRenderer.Alignment.CENTER, () -> "Test " + BallerinaPsiUtil.getFunctionName(element)
         );
     }
 }

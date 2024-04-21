@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.ballerina.plugins.idea.runconfig.application;
 
 import com.intellij.codeInsight.daemon.LineMarkerInfo;
@@ -8,61 +25,41 @@ import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder;
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import io.ballerina.plugins.idea.BallerinaIcons;
 import io.ballerina.plugins.idea.project.BallerinaProjectUtil;
+import io.ballerina.plugins.idea.psi.BallerinaPsiUtil;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.Cursor;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.nio.file.Paths;
 
+import javax.swing.Icon;
+
+
+/**
+ * Provides gutter icons for main functions and services.
+ *
+ * @since 2.0.0
+ */
 public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
 
-    @Nullable
+    private final String balExtension = ".bal";
 
+    @Nullable
     @Override
     public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element) {
-        String version = BallerinaSdkService.getInstance().getBallerinaVersion();
-        if (version != null && isMainFunction(element) || isService(element)) {
+        String version = BallerinaSdkService.getInstance().getBallerinaVersion(element.getProject());
+        if (version != null && BallerinaPsiUtil.isMainFunction(element) || BallerinaPsiUtil.isService(element)) {
             return createRunLineMarkerInfo(element);
         }
         return null;
-    }
-
-    private boolean checkPublicFunction(@NotNull PsiElement element) {
-        PsiElement parent = element.getParent();
-        return parent.getFirstChild().getNextSibling().toString()
-                .equals("PsiElement(BallerinaTokenType.PUBLIC_KEYWORD)");
-    }
-
-    private boolean isMainFunction(@NotNull PsiElement element) {
-        PsiElement prevSibling = element.getPrevSibling();
-        while (prevSibling != null && prevSibling.toString().equals("PsiWhiteSpace")) {
-            prevSibling = prevSibling.getPrevSibling();
-        }
-        return element.getText().equals("main") && prevSibling != null && Objects.requireNonNull(prevSibling).toString()
-                .equals("PsiElement(BallerinaTokenType.FUNCTION_KEYWORD)") && element.getParent() != null &&
-                Objects.requireNonNull(element.getParent()).toString()
-                        .equals("BallerinaFunctionDefnImpl(FUNCTION_DEFN)") && checkPublicFunction(element) &&
-                element.getParent().getParent() != null &&
-                Objects.requireNonNull(element.getParent().getParent()).toString()
-                        .equals("BallerinaOtherDeclImpl(OTHER_DECL)");
-    }
-
-    private boolean isService(@NotNull PsiElement element) {
-        return Objects.requireNonNull(element).toString().equals("PsiElement(BallerinaTokenType.SERVICE_KEYWORD)") &&
-                element.getParent() != null && Objects.requireNonNull(element.getParent()).toString()
-                .equals("BallerinaServiceDeclImpl(SERVICE_DECL)") && element.getParent().getParent() != null &&
-                Objects.requireNonNull(element.getParent().getParent()).toString()
-                        .equals("BallerinaOtherDeclImpl(OTHER_DECL)");
     }
 
     private LineMarkerInfo createRunLineMarkerInfo(@NotNull PsiElement element) {
@@ -74,8 +71,7 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
             String path = virtualFile.getPath();
             String packagePath = BallerinaProjectUtil.findBallerinaPackage(path);
             if (!packagePath.isEmpty()) {
-                ArrayList<String> pathList = new ArrayList<>(Arrays.asList(packagePath.split("\\\\")));
-                packageName = pathList.get(pathList.size() - 1);
+                packageName = Paths.get(packagePath).normalize().getFileName().toString();
                 fileName = "package " + packageName;
             } else {
                 packageName = "";
@@ -84,9 +80,9 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
             packageName = "";
         }
         String finalFileName = fileName;
-        return new LineMarkerInfo<>(element, element.getTextRange(), AllIcons.RunConfigurations.TestState.Run,
-                // Default run icon
-                psiElement -> "Run " + finalFileName, // Tooltip text when hovering over the run icon
+        Icon icon = BallerinaIcons.RUN;
+        return new LineMarkerInfo<>(element, element.getTextRange(), icon,
+                psiElement -> "Run " + finalFileName,
                 (e, elt) -> {
 
                     e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -94,15 +90,16 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
                     Project project = elt.getProject();
                     VirtualFile file = elt.getContainingFile().getVirtualFile();
 
-                    if (file != null && file.getName().endsWith(".bal")) {
+                    if (file != null && file.getName().endsWith(balExtension)) {
 
-                        // Get the RunManager and create a new configuration
                         RunManager runManager = RunManager.getInstance(project);
                         String configName = !packageName.isEmpty() ? packageName : finalFileName;
-                        String temp = configName.endsWith(".bal") ? configName.substring(0, configName.length() - 4) :
-                                configName;
+                        String temp = configName.endsWith(balExtension)
+                                ? configName.substring(0, configName.length() - 4)
+                                : configName;
                         RunnerAndConfigurationSettings settings =
-                                runManager.createConfiguration(temp, BallerinaApplicationRunConfigType.class);
+                                runManager.createConfiguration("Run " + temp,
+                                        BallerinaApplicationRunConfigType.class);
                         BallerinaApplicationRunConfiguration runConfiguration =
                                 (BallerinaApplicationRunConfiguration) settings.getConfiguration();
                         String script = file.getPath();
@@ -112,7 +109,6 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
                         }
                         runConfiguration.setScriptName(script);
 
-                        // Check if similar configuration already exists, if not, add the new one
                         boolean exists = false;
                         for (RunConfiguration existingConfig : runManager.getAllConfigurationsList()) {
                             if (existingConfig instanceof BallerinaApplicationRunConfiguration &&
@@ -121,6 +117,7 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
                                             .equals(runConfiguration.getScriptName())) {
                                 exists = true;
                                 settings = runManager.findSettings(existingConfig);
+                                runConfiguration = (BallerinaApplicationRunConfiguration) existingConfig;
                                 break;
                             }
                         }
@@ -129,7 +126,6 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
                             runManager.addConfiguration(settings);
                         }
 
-                        // Select the new configuration in the UI
                         runManager.setSelectedConfiguration(settings);
 
                         try {
@@ -139,8 +135,7 @@ public class BallerinaRunLineMarkerProvider implements LineMarkerProvider {
                             throw new RuntimeException(ex);
                         }
                     }
-                }, GutterIconRenderer.Alignment.CENTER, () -> "Run " + finalFileName // Fallback tooltip text
+                }, GutterIconRenderer.Alignment.CENTER, () -> "Run " + finalFileName
         );
     }
-
 }

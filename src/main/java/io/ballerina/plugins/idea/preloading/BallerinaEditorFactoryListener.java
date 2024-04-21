@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.ballerina.plugins.idea.preloading;
 
 import com.intellij.openapi.application.ApplicationManager;
@@ -16,22 +33,15 @@ import io.ballerina.plugins.idea.widget.BallerinaIconWidget;
 import io.ballerina.plugins.idea.widget.BallerinaIconWidgetFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.wso2.lsp4intellij.IntellijLanguageClient;
-import org.wso2.lsp4intellij.client.languageserver.serverdefinition.ProcessBuilderServerDefinition;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
+/**
+ * Editor listener implementation which is used to handle ballerina source files opening.
+ *
+ * @since 2.0.0
+ */
 public class BallerinaEditorFactoryListener implements EditorFactoryListener {
 
-    private final Project project;
     private boolean balSourcesFound = false;
-
-    public BallerinaEditorFactoryListener(Project project) {
-        this.project = project;
-    }
 
     private static boolean isBalFile(@Nullable VirtualFile file) {
         if (file == null || file.getExtension() == null || file instanceof LightVirtualFileBase) {
@@ -52,47 +62,30 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
             return;
         }
         VirtualFile file = FileDocumentManager.getInstance().getFile(event.getEditor().getDocument());
-        if (!balSourcesFound && project.equals(this.project) && isBalFile(file)) {
-            doRegister(project);
+        if (!balSourcesFound && isBalFile(file)) {
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
                 BallerinaDetectionWidget widget = BallerinaDetectionWidgetFactory.getWidget(project);
                 if (widget != null) {
                     ApplicationManager.getApplication().invokeLater(() -> widget.setMessage("Detecting Ballerina.."));
                 }
-                String balVersion = BallerinaSdkService.getInstance().getBallerinaVersion();
+                String balVersion = BallerinaSdkService.getInstance().getBallerinaVersion(project);
                 if (widget != null) {
-                    ApplicationManager.getApplication().invokeLater(() -> widget.setMessage(""));
-                }
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    if (balVersion == null) {
-                        BallerinaNotification.notifyBallerinaNotDetected(project);
-                    } else {
-                        BallerinaIconWidget iconWidget = BallerinaIconWidgetFactory.getWidget(project);
-                        if (iconWidget != null) {
-                            ApplicationManager.getApplication().invokeLater(() -> {
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        widget.setMessage("");
+                        if (balVersion.isEmpty()) {
+                            BallerinaNotification.notifyBallerinaNotDetected(project);
+                        } else {
+                            BallerinaIconWidget iconWidget = BallerinaIconWidgetFactory.getWidget(project);
+                            if (iconWidget != null) {
                                 iconWidget.setIcon(BallerinaIcons.FILE);
                                 iconWidget.setTooltipText(balVersion);
-
-                            });
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 balSourcesFound = true;
             });
             balSourcesFound = true;
         }
-    }
-
-    private static void doRegister(@NotNull Project project) {
-        List<String> args = new ArrayList<>();
-        args.add(BallerinaSdkService.getInstance().getBallerinaPath());
-        args.add("start-language-server");
-        ProcessBuilder processBuilder = new ProcessBuilder(args);
-        processBuilder.directory(new File(Objects.requireNonNull(project.getBasePath())));
-
-        // Registers language server definition in the lsp4intellij lang-client library.
-        IntellijLanguageClient.addServerDefinition(new ProcessBuilderServerDefinition("bal", processBuilder),
-                project);
-
     }
 }
