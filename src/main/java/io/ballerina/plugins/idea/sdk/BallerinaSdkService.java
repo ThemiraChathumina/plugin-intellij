@@ -18,6 +18,7 @@
 package io.ballerina.plugins.idea.sdk;
 
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import io.ballerina.plugins.idea.notification.BallerinaPluginNotifier;
 
@@ -30,6 +31,7 @@ import java.util.List;
  */
 public class BallerinaSdkService {
 
+    private static final Logger LOG = Logger.getInstance(BallerinaSdkService.class);
     private static BallerinaSdkService instance;
     private final String ballerinaVersion;
     private final String ballerinaPath;
@@ -42,6 +44,8 @@ public class BallerinaSdkService {
         ballerinaVersion = BallerinaSdkUtils.getBallerinaVersion();
         ballerinaPath = BallerinaSdkUtils.getBallerinaPath();
         sdkList = BallerinaSdkUtils.getBallerinaSdks(ballerinaPath);
+        LOG.info("Ballerina version: " + ballerinaVersion);
+        LOG.info("Ballerina path: " + ballerinaPath);
     }
 
     public static synchronized BallerinaSdkService getInstance() {
