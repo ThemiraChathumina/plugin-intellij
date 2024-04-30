@@ -60,16 +60,16 @@ public class BallerinaSdkUtils {
         try {
             Process process = Runtime.getRuntime().exec(cmdArray);
 
-            try (Scanner scanner = new Scanner(process.getInputStream()).useDelimiter("\\A")) {
-                String output = scanner.hasNext() ? scanner.next() : "";
-                LOG.info("Command output: " + output);
-                int exitCode = process.waitFor();
-                if (exitCode != 0) {
-                    return "";
-                }
-
-                return output.trim();
+            Scanner scanner = new Scanner(process.getInputStream()).useDelimiter("\\A");
+            String output = scanner.hasNext() ? scanner.next() : "";
+            LOG.info("Command output: " + output);
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                return "";
             }
+
+            return output.trim();
+
         } catch (Exception e) {
             LOG.error("Error occurred while running command: " + String.join(" ", cmd), e);
             return "";
