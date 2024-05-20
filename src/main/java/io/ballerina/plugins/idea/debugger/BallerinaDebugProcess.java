@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.ballerina.plugins.idea.debugger;
 
 import com.intellij.execution.ExecutionResult;
@@ -12,17 +29,8 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.LogicalPosition;
-import com.intellij.openapi.editor.ScrollType;
-import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.util.Key;
-import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiDocumentManager;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiManager;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.xdebugger.XDebugProcess;
 import com.intellij.xdebugger.XDebugSession;
@@ -58,8 +66,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,12 +73,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
  * Ballerina debug process which handles debugging.
+ *
+ * @since 2.0.0
  */
 public class BallerinaDebugProcess extends XDebugProcess {
 
@@ -102,6 +109,26 @@ public class BallerinaDebugProcess extends XDebugProcess {
         if (executionResult == null) {
             isRemoteDebugMode = true;
         }
+    }
+
+    public static String longestCommonSuffix(String s1, String s2) {
+        if (s1 == null || s2 == null) {
+            return "";  // Return empty string if either input string is null
+        }
+
+        int index1 = s1.length() - 1;
+        int index2 = s2.length() - 1;
+        int length = 0;
+
+        // Compare characters from the end of both strings
+        while (index1 >= 0 && index2 >= 0 && s1.charAt(index1) == s2.charAt(index2)) {
+            index1--;
+            index2--;
+            length++;
+        }
+
+        // Return the longest common suffix
+        return s1.substring(index1 + 1, index1 + 1 + length);
     }
 
     public BallerinaDAPClientConnector getDapClientConnector() {
@@ -380,34 +407,6 @@ public class BallerinaDebugProcess extends XDebugProcess {
                     if (breakpoint == null) {
                         session.positionReached(context);
                     } else {
-//                        // Attempt to open the file in the editor, even if not in project
-//                        String externalFilePath = Objects.requireNonNull(breakpoint.getSourcePosition())
-//                                .getFile().getPath();
-//                        VirtualFile fileToOpen = LocalFileSystem.getInstance().refreshAndFindFileByPath(externalFilePath);
-//
-//                        if (fileToOpen == null) {
-//                            // Try to create a VirtualFile for the path if it doesn't exist
-//                            fileToOpen = LocalFileSystem.getInstance().findFileByPath(
-//                                    Paths.get(externalFilePath).normalize().toString());
-//                        }
-//
-//                        if (fileToOpen != null) {
-//                            FileEditorManager fileEditorManager = FileEditorManager.getInstance(session.getProject());
-//                            fileEditorManager.openFile(fileToOpen, true);
-//                            int lineNumber = breakpoint.getSourcePosition().getLine();
-//                            PsiFile psiFile = PsiManager.getInstance(session.getProject()).findFile(fileToOpen);
-//                            if (psiFile != null) {
-//                                Document document = PsiDocumentManager.getInstance(session.getProject()).getDocument(psiFile);
-//                                if (document != null) {
-//                                    Editor editor = fileEditorManager.getSelectedTextEditor();
-//                                    if (editor != null) {
-//                                        editor.getCaretModel().moveToLogicalPosition(new LogicalPosition(lineNumber, 0));
-//                                        editor.getScrollingModel().scrollToCaret(ScrollType.CENTER);
-//                                        editor.getSelectionModel().selectLineAtCaret();
-//                                    }
-//                                }
-//                            }
-//                        }
                         session.breakpointReached(breakpoint, null, context);
                     }
                 }
@@ -470,7 +469,7 @@ public class BallerinaDebugProcess extends XDebugProcess {
                 LOGGER.warn("URI Syntax Exception: " + e.getMessage());
                 continue;
             }
-            String commonSuffix = longestCommonSuffix(filePath,encodedPath);
+            String commonSuffix = longestCommonSuffix(filePath, encodedPath);
             int commonParts = 0;
             try {
                 commonParts = Paths.get(commonSuffix).normalize().getNameCount();
@@ -482,26 +481,6 @@ public class BallerinaDebugProcess extends XDebugProcess {
             }
         }
         return null;
-    }
-
-    public static String longestCommonSuffix(String s1, String s2) {
-        if (s1 == null || s2 == null) {
-            return "";  // Return empty string if either input string is null
-        }
-
-        int index1 = s1.length() - 1;
-        int index2 = s2.length() - 1;
-        int length = 0;
-
-        // Compare characters from the end of both strings
-        while (index1 >= 0 && index2 >= 0 && s1.charAt(index1) == s2.charAt(index2)) {
-            index1--;
-            index2--;
-            length++;
-        }
-
-        // Return the longest common suffix
-        return s1.substring(index1 + 1, index1 + 1 + length);
     }
 
     @Nullable
@@ -606,18 +585,6 @@ public class BallerinaDebugProcess extends XDebugProcess {
             }
 
             ApplicationManager.getApplication().invokeLater(() -> {
-//                if (attach) {
-//                    try {
-//                        // Sends "configuration done" notification to the debug server.
-//                        dapClientConnector.getRequestManager().configurationDone(new ConfigurationDoneArguments());
-//                    } catch (Exception e) {
-//                        LOGGER.warn("Configuration done request failed.", e);
-//                    }
-//                    // Sends attach request to the debug server.
-//                    LOGGER.debug("Sending Attach command.");
-////                    dapClientConnector.attachToServer();
-//                    dapClientConnector.launchServer();
-//                }
                 Map<Source, List<SourceBreakpoint>> sourceBreakpoints = new HashMap<>();
                 if (getSession().areBreakpointsMuted()) {
                     return;
@@ -661,7 +628,6 @@ public class BallerinaDebugProcess extends XDebugProcess {
                     // Sends attach request to the debug server.
                     LOGGER.debug("Sending Attach command.");
                     dapClientConnector.attachToServer();
-//                    dapClientConnector.launchServer();
                 }
             });
         }

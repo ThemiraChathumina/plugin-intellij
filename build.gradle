@@ -111,6 +111,6 @@ checkstyleTest {
     classpath = sourceSets.test.compileClasspath
 }
 
-//build.dependsOn check
-//runIde.dependsOn check
-//buildPlugin.dependsOn check
+build.dependsOn check
+runIde.dependsOn check
+buildPlugin.dependsOn check

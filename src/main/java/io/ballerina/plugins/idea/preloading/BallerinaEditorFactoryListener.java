@@ -54,10 +54,21 @@ import static io.ballerina.plugins.idea.preloading.BallerinaLSPUtils.registerPro
  */
 public class BallerinaEditorFactoryListener implements EditorFactoryListener {
 
+    private final Map<Editor, CaretListener> editorCaretListenerMap = new HashMap<>();
     private boolean balSourcesFound = false;
     private boolean balSdkFound = false;
-    private final Map<Editor, CaretListener> editorCaretListenerMap = new HashMap<>();
 
+    private static boolean isBalFile(@Nullable VirtualFile file) {
+        if (file == null || file.getExtension() == null || file instanceof LightVirtualFileBase) {
+            return false;
+        }
+        String fileUrl = file.getUrl();
+        if (fileUrl.isEmpty() || fileUrl.startsWith("jar:")) {
+            return false;
+        }
+
+        return file.getExtension().equals(BallerinaConstants.BAL_EXTENSION.substring(1));
+    }
 
     @Override
     public void editorCreated(@NotNull EditorFactoryEvent event) {
@@ -112,21 +123,9 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
         if (caretListener != null) {
             event.getEditor().getCaretModel().removeCaretListener(caretListener);
         }
-        if(event.getEditor().getEditorKind() == EditorKind.MAIN_EDITOR){
+        if (event.getEditor().getEditorKind() == EditorKind.MAIN_EDITOR) {
             IntellijLanguageClient.editorClosed(event.getEditor());
         }
-    }
-
-    private static boolean isBalFile(@Nullable VirtualFile file) {
-        if (file == null || file.getExtension() == null || file instanceof LightVirtualFileBase) {
-            return false;
-        }
-        String fileUrl = file.getUrl();
-        if (fileUrl.isEmpty() || fileUrl.startsWith("jar:")) {
-            return false;
-        }
-
-        return file.getExtension().equals(BallerinaConstants.BAL_EXTENSION.substring(1));
     }
 
     private void registerIconWidget(Project project) {
@@ -140,7 +139,7 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
     private void registerLanguageServer(Project project, Editor editor) {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             registerProject(project);
-            if(editor.getEditorKind() == EditorKind.MAIN_EDITOR) {
+            if (editor.getEditorKind() == EditorKind.MAIN_EDITOR) {
                 IntellijLanguageClient.editorOpened(editor);
             }
         });
