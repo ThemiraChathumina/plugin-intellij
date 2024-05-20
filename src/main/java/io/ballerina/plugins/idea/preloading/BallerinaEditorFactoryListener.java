@@ -33,8 +33,6 @@ import io.ballerina.plugins.idea.highlighting.BallerinaIdentifierHighlighter;
 import io.ballerina.plugins.idea.notification.BallerinaPluginNotifier;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkUtils;
-import io.ballerina.plugins.idea.widget.BallerinaDetectionWidget;
-import io.ballerina.plugins.idea.widget.BallerinaDetectionWidgetFactory;
 import io.ballerina.plugins.idea.widget.BallerinaIconWidget;
 import io.ballerina.plugins.idea.widget.BallerinaIconWidgetFactory;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +42,6 @@ import org.wso2.lsp4intellij.IntellijLanguageClient;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.ballerina.plugins.idea.BallerinaConstants.EMPTY_STRING;
 import static io.ballerina.plugins.idea.preloading.BallerinaLSPUtils.registerProject;
 
 /**
@@ -91,27 +88,20 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
             return;
         }
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            BallerinaDetectionWidget widget = BallerinaDetectionWidgetFactory.getWidget(project);
-            if (widget != null) {
-                ApplicationManager.getApplication().invokeLater(() -> widget.setMessage("Detecting Ballerina.."));
-            }
             String balVersion = BallerinaSdkService.getInstance().getBallerinaVersion(project);
-            if (widget != null) {
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    widget.setMessage(EMPTY_STRING);
-                    if (!BallerinaSdkUtils.isValidVersion(balVersion)) {
-                        if (BallerinaSdkUtils.isOldVersion(balVersion)) {
-                            BallerinaPluginNotifier.notifyToUseSwanLake(project);
-                        } else {
-                            BallerinaPluginNotifier.notifyBallerinaNotDetected(project);
-                        }
+            ApplicationManager.getApplication().invokeLater(() -> {
+                if (!BallerinaSdkUtils.isValidVersion(balVersion)) {
+                    if (BallerinaSdkUtils.isOldVersion(balVersion)) {
+                        BallerinaPluginNotifier.notifyToUseSwanLake(project);
                     } else {
-                        balSdkFound = true;
-                        registerIconWidget(project);
-                        registerLanguageServer(project, event.getEditor());
+                        BallerinaPluginNotifier.notifyBallerinaNotDetected(project);
                     }
-                });
-            }
+                } else {
+                    balSdkFound = true;
+                    registerIconWidget(project);
+                    registerLanguageServer(project, event.getEditor());
+                }
+            });
             balSourcesFound = true;
         });
         balSourcesFound = true;

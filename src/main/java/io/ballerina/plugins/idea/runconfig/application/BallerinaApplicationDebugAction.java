@@ -23,6 +23,7 @@ import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -49,6 +50,11 @@ public class BallerinaApplicationDebugAction extends AnAction {
 
     public BallerinaApplicationDebugAction() {
         super(BallerinaIcons.DEBUG);
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     @Override

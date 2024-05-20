@@ -66,8 +66,8 @@ public class BallerinaLSPUtils {
             processBuilder.directory(new File(Objects.requireNonNull(project.getBasePath())));
 
             IntellijLanguageClient.addExtensionManager(BAL_EXT_NAME, new BallerinaLSPExtensionManager());
-            IntellijLanguageClient
-                    .addServerDefinition(new BallerinaLanguageServerDefinition(BAL_EXT_NAME, processBuilder), project);
+            IntellijLanguageClient.addServerDefinition(
+                    new BallerinaLanguageServerDefinition(BAL_EXT_NAME, processBuilder), project);
             ProjectManagerListener projectManagerListener = new BallerinaProjectListener();
             registeredProjects.put(project.getBasePath(), projectManagerListener);
             ProjectManager.getInstance().addProjectManagerListener(project, projectManagerListener);

@@ -22,6 +22,7 @@ import com.intellij.execution.RunManager;
 import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -41,6 +42,11 @@ import java.util.Optional;
 import static io.ballerina.plugins.idea.BallerinaConstants.BAL_EXTENSION;
 import static io.ballerina.plugins.idea.BallerinaConstants.EMPTY_STRING;
 
+/**
+ * Represents Ballerina test action for running and debugging Ballerina tests for individual test functions.
+ *
+ * @since 2.0.0
+ */
 public class BallerinaTestFunctionAction extends AnAction {
 
     private final PsiElement element;
@@ -50,6 +56,11 @@ public class BallerinaTestFunctionAction extends AnAction {
         super(isDebugging ? BallerinaIcons.DEBUG : BallerinaIcons.RUN);
         this.element = element;
         this.isDebugging = isDebugging;
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     @Override

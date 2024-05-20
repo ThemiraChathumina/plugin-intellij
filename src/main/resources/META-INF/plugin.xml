@@ -59,10 +59,6 @@
 
         <editorFactoryListener implementation="io.ballerina.plugins.idea.preloading.BallerinaEditorFactoryListener"/>
 
-        <statusBarWidgetFactory
-                implementation="io.ballerina.plugins.idea.widget.BallerinaDetectionWidgetFactory"
-                id="BallerinaStatusBarWidget"/>
-
         <statusBarWidgetFactory implementation="io.ballerina.plugins.idea.widget.BallerinaIconWidgetFactory"
                                 id="BallerinaIconWidget"/>
 
