@@ -1,0 +1,669 @@
+package io.ballerina.plugins.idea.debugger;
+
+import com.intellij.execution.ExecutionResult;
+import com.intellij.execution.process.ProcessEvent;
+import com.intellij.execution.process.ProcessHandler;
+import com.intellij.execution.process.ProcessListener;
+import com.intellij.execution.ui.ConsoleViewContentType;
+import com.intellij.execution.ui.ExecutionConsole;
+import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.LogicalPosition;
+import com.intellij.openapi.editor.ScrollType;
+import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.util.Key;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiDocumentManager;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
+import com.intellij.util.containers.ContainerUtil;
+import com.intellij.xdebugger.XDebugProcess;
+import com.intellij.xdebugger.XDebugSession;
+import com.intellij.xdebugger.XSourcePosition;
+import com.intellij.xdebugger.breakpoints.XBreakpoint;
+import com.intellij.xdebugger.breakpoints.XBreakpointHandler;
+import com.intellij.xdebugger.breakpoints.XLineBreakpoint;
+import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider;
+import com.intellij.xdebugger.evaluation.XDebuggerEvaluator;
+import com.intellij.xdebugger.frame.XExecutionStack;
+import com.intellij.xdebugger.frame.XSuspendContext;
+import com.intellij.xdebugger.frame.XValueMarkerProvider;
+import com.intellij.xdebugger.impl.actions.XDebuggerActions;
+import com.intellij.xdebugger.stepping.XSmartStepIntoHandler;
+import com.intellij.xdebugger.ui.XDebugTabLayouter;
+import io.ballerina.plugins.idea.debugger.breakpoint.BallerinaBreakPointType;
+import io.ballerina.plugins.idea.debugger.breakpoint.BallerinaBreakpointProperties;
+import org.eclipse.lsp4j.debug.ConfigurationDoneArguments;
+import org.eclipse.lsp4j.debug.ContinueArguments;
+import org.eclipse.lsp4j.debug.NextArguments;
+import org.eclipse.lsp4j.debug.SetBreakpointsArguments;
+import org.eclipse.lsp4j.debug.Source;
+import org.eclipse.lsp4j.debug.SourceBreakpoint;
+import org.eclipse.lsp4j.debug.StackFrame;
+import org.eclipse.lsp4j.debug.StackTraceArguments;
+import org.eclipse.lsp4j.debug.StackTraceResponse;
+import org.eclipse.lsp4j.debug.StepInArguments;
+import org.eclipse.lsp4j.debug.StepOutArguments;
+import org.eclipse.lsp4j.debug.StoppedEventArguments;
+import org.eclipse.lsp4j.debug.ThreadsResponse;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+/**
+ * Ballerina debug process which handles debugging.
+ */
+public class BallerinaDebugProcess extends XDebugProcess {
+
+    private static final Logger LOGGER = Logger.getInstance(BallerinaDebugProcess.class);
+    private static final int MAX_RETRY_COUNT = 6;
+    private final XDebugSession debugSession;
+    private final ProcessHandler processHandler;
+    private final ExecutionConsole executionConsole;
+    private final BallerinaDebuggerEditorsProvider editorsProvider;
+    private final BallerinaBreakpointHandler breakpointHandler;
+    private final BallerinaDAPClientConnector dapClientConnector;
+    private final AtomicBoolean breakpointsInitiated = new AtomicBoolean();
+    private final List<XBreakpoint<BallerinaBreakpointProperties>> breakpoints = ContainerUtil.createConcurrentList();
+    private boolean isConnected = false;
+    private boolean isReadyToConnect = false;
+    private boolean isRemoteDebugMode = false;
+
+    public BallerinaDebugProcess(@NotNull XDebugSession session, @NotNull BallerinaDAPClientConnector connector,
+                                 @Nullable ExecutionResult executionResult) {
+        super(session);
+        debugSession = session;
+        dapClientConnector = connector;
+        processHandler = executionResult == null ? super.getProcessHandler() : executionResult.getProcessHandler();
+        executionConsole = executionResult == null ? super.createConsole() : executionResult.getExecutionConsole();
+        editorsProvider = new BallerinaDebuggerEditorsProvider();
+        breakpointHandler = new BallerinaBreakpointHandler();
+        if (executionResult == null) {
+            isRemoteDebugMode = true;
+        }
+    }
+
+    public BallerinaDAPClientConnector getDapClientConnector() {
+        return dapClientConnector;
+    }
+
+    @Nullable
+    @Override
+    protected ProcessHandler doGetProcessHandler() {
+        return processHandler;
+    }
+
+    @NotNull
+    @Override
+    public ExecutionConsole createConsole() {
+        return executionConsole;
+    }
+
+    @NotNull
+    @Override
+    public XBreakpointHandler<?>[] getBreakpointHandlers() {
+        return new XBreakpointHandler[]{breakpointHandler};
+    }
+
+    @NotNull
+    @Override
+    public XDebuggerEditorsProvider getEditorsProvider() {
+        return editorsProvider;
+    }
+
+    @Override
+    public void sessionInitialized() {
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            if (isRemoteDebugMode) {
+                print("Attaching to remote debug process...\n\n", false);
+                initDebugSession();
+            } else {
+                print("Waiting for debug process to start...\n\n", false);
+                if (processHandler == null || processHandler.isProcessTerminating() ||
+                        processHandler.isProcessTerminated()) {
+                    return;
+                }
+                processHandler.addProcessListener(new ProcessListener() {
+                    @Override
+                    public void onTextAvailable(@NotNull ProcessEvent event, @NotNull Key outputType) {
+                        // Waiting to make the connection with the debug server until the ballerina program execution
+                        // is started and then suspended.
+                        if (!isReadyToConnect && event.getText().contains("Listening for transport dt_socket")) {
+                            isReadyToConnect = true;
+                            initDebugSession();
+                        }
+                    }
+
+                    @Override
+                    public void startNotified(@NotNull ProcessEvent event) {
+                        // No implementation.
+                    }
+
+                    @Override
+                    public void processTerminated(@NotNull ProcessEvent event) {
+                        // No implementation.
+                    }
+
+                    @Override
+                    public void processWillTerminate(@NotNull ProcessEvent event, boolean willBeDestroyed) {
+                        // No implementation.
+                    }
+                });
+            }
+        });
+    }
+
+    public void initDebugSession() {
+        final int[] retryAttempt = {0};
+        // If already connected with the debug server, tries to set breakpoints and attach with the remote jvm.
+        if (dapClientConnector.isConnected()) {
+            LOGGER.debug("Connection is already created.");
+            isConnected = true;
+            startDebugSession();
+            return;
+        }
+        // Else, tries to initiate the socket connection.
+        while (!isConnected && (++retryAttempt[0] <= MAX_RETRY_COUNT)) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            if (!dapClientConnector.isConnected()) {
+                LOGGER.debug("Not connected. Retrying...");
+                dapClientConnector.createConnection();
+                if (dapClientConnector.isConnected()) {
+                    isConnected = true;
+                    if (isRemoteDebugMode) {
+                        print(String.format("Connected to the remote server at %s.\n\n",
+                                dapClientConnector.getAddress()), false);
+                    }
+                    LOGGER.debug("Connection created.");
+                    startDebugSession();
+                    break;
+                }
+            } else {
+                LOGGER.debug("Connection is already created.");
+                isConnected = true;
+                startDebugSession();
+                break;
+            }
+        }
+        if (!dapClientConnector.isConnected()) {
+            print(String.format("Connection to debug server at %s could not be established.\n",
+                    dapClientConnector.getAddress()), true);
+            getSession().stop();
+        }
+    }
+
+    private void startDebugSession() {
+        if (!isConnected) {
+            return;
+        }
+        initBreakpointHandlersAndSetBreakpoints();
+        LOGGER.debug("Sending breakpoints.");
+        breakpointHandler.sendBreakpoints(breakpoints, true);
+    }
+
+    @Override
+    public void startStepOver(@Nullable XSuspendContext context) {
+        Long workerID = getWorkerID(context);
+        if (workerID == null || !checkCanPerformCommands()) {
+            return;
+        }
+        NextArguments nextArgs = new NextArguments();
+        nextArgs.setThreadId(Math.toIntExact(workerID));
+        try {
+            dapClientConnector.getRequestManager().next(nextArgs);
+        } catch (Exception e) {
+            LOGGER.warn("Step over request failed", e);
+        }
+    }
+
+    @Override
+    public void startStepInto(@Nullable XSuspendContext context) {
+        Long workerID = getWorkerID(context);
+        if (workerID == null || !checkCanPerformCommands()) {
+            return;
+        }
+        StepInArguments stepInArgs = new StepInArguments();
+        stepInArgs.setThreadId(Math.toIntExact(workerID));
+        try {
+            dapClientConnector.getRequestManager().stepIn(stepInArgs);
+        } catch (Exception e) {
+            LOGGER.warn("Step in request failed", e);
+        }
+    }
+
+    @Override
+    public void startStepOut(@Nullable XSuspendContext context) {
+        Long workerID = getWorkerID(context);
+        if (workerID == null || !checkCanPerformCommands()) {
+            return;
+        }
+        StepOutArguments stepOutArgs = new StepOutArguments();
+        stepOutArgs.setThreadId(Math.toIntExact(workerID));
+        try {
+            dapClientConnector.getRequestManager().stepOut(stepOutArgs);
+        } catch (Exception e) {
+            LOGGER.warn("Step out request failed", e);
+        }
+    }
+
+    @Override
+    public void resume(@Nullable XSuspendContext context) {
+        Long workerID = getWorkerID(context);
+        if (workerID == null || !checkCanPerformCommands()) {
+            return;
+        }
+        ContinueArguments continueArgs = new ContinueArguments();
+        continueArgs.setThreadId(Math.toIntExact(workerID));
+        try {
+            dapClientConnector.getRequestManager().resume(continueArgs);
+        } catch (Exception e) {
+            LOGGER.warn("Step out request failed", e);
+        }
+    }
+
+    // Todo - Evaluate the previous logic (suspend context based) and reuse if this impl interrupts other processes.
+    @Override
+    public void stop() {
+        // If we don't call this using the executeOnPooledThread(), the UI will hang until the debug server is stopped.
+        ApplicationManager.getApplication().invokeLater(() -> {
+            if (!isConnected) {
+                return;
+            }
+            try {
+                dapClientConnector.disconnectFromServer();
+                if (isRemoteDebugMode) {
+                    print("Disconnected successfully from the remote debug process.\n", false);
+                } else {
+                    print("Disconnected successfully from the debug server.\n", false);
+                }
+            } catch (Exception e) {
+                if (isRemoteDebugMode) {
+                    print("Disconnected exceptionally from the remote debug process.\n", true);
+                } else {
+                    print("Disconnected exceptionally from the debug server.\n", true);
+                }
+
+            } finally {
+                XDebugSession session = getSession();
+                if (session != null) {
+                    session.stop();
+                }
+                isConnected = false;
+            }
+        });
+
+    }
+
+    @Nullable
+    private Long getWorkerID(@Nullable XSuspendContext context) {
+        if (context != null) {
+            XExecutionStack activeExecutionStack = context.getActiveExecutionStack();
+            if (activeExecutionStack instanceof BallerinaExecutionStack) {
+                return ((BallerinaExecutionStack) activeExecutionStack).getMyWorkerID();
+            }
+        }
+        print("Error occurred while getting the thread ID.", true);
+        getSession().stop();
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public XSmartStepIntoHandler<?> getSmartStepIntoHandler() {
+        return super.getSmartStepIntoHandler();
+    }
+
+    @Override
+    public void runToPosition(@NotNull XSourcePosition position, @Nullable XSuspendContext context) {
+        // Todo
+    }
+
+    @Override
+    public boolean checkCanInitBreakpoints() {
+        // We manually initialize the breakpoints after connecting to the debug server.
+        return false;
+    }
+
+    public void handleDebugHit(StoppedEventArguments args) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            if (!isConnected) {
+                return;
+            }
+            StackTraceArguments stackTraceArgs = new StackTraceArguments();
+            stackTraceArgs.setThreadId(args.getThreadId());
+            try {
+                ThreadsResponse threadsResp = dapClientConnector.getRequestManager().threads();
+                if (Arrays.stream(threadsResp.getThreads())
+                        .noneMatch(t -> t.getId() == args.getThreadId().intValue())) {
+                    return;
+                }
+                StackTraceResponse stackTraceResp = dapClientConnector.getRequestManager().stackTrace(stackTraceArgs);
+                StackFrame[] stackFrames = stackTraceResp.getStackFrames();
+                if (stackFrames.length > 0) {
+                    XBreakpoint<BallerinaBreakpointProperties> breakpoint = findBreakPoint(stackFrames[0]);
+                    // Get the current suspend context from the session. If the context is null, we need to create a new
+                    // context. If the context is not null, we need to add a new execution stack to the current suspend
+                    // context.
+                    XSuspendContext context = getSession().getSuspendContext();
+                    if (context == null) {
+                        context = new BallerinaSuspendContext(BallerinaDebugProcess.this);
+                    }
+                    ((BallerinaSuspendContext) context).addToExecutionStack(Long.valueOf(args.getThreadId()),
+                            stackFrames);
+                    XDebugSession session = getSession();
+
+                    if (breakpoint == null) {
+                        session.positionReached(context);
+                    } else {
+//                        // Attempt to open the file in the editor, even if not in project
+//                        String externalFilePath = Objects.requireNonNull(breakpoint.getSourcePosition())
+//                                .getFile().getPath();
+//                        VirtualFile fileToOpen = LocalFileSystem.getInstance().refreshAndFindFileByPath(externalFilePath);
+//
+//                        if (fileToOpen == null) {
+//                            // Try to create a VirtualFile for the path if it doesn't exist
+//                            fileToOpen = LocalFileSystem.getInstance().findFileByPath(
+//                                    Paths.get(externalFilePath).normalize().toString());
+//                        }
+//
+//                        if (fileToOpen != null) {
+//                            FileEditorManager fileEditorManager = FileEditorManager.getInstance(session.getProject());
+//                            fileEditorManager.openFile(fileToOpen, true);
+//                            int lineNumber = breakpoint.getSourcePosition().getLine();
+//                            PsiFile psiFile = PsiManager.getInstance(session.getProject()).findFile(fileToOpen);
+//                            if (psiFile != null) {
+//                                Document document = PsiDocumentManager.getInstance(session.getProject()).getDocument(psiFile);
+//                                if (document != null) {
+//                                    Editor editor = fileEditorManager.getSelectedTextEditor();
+//                                    if (editor != null) {
+//                                        editor.getCaretModel().moveToLogicalPosition(new LogicalPosition(lineNumber, 0));
+//                                        editor.getScrollingModel().scrollToCaret(ScrollType.CENTER);
+//                                        editor.getSelectionModel().selectLineAtCaret();
+//                                    }
+//                                }
+//                            }
+//                        }
+                        session.breakpointReached(breakpoint, null, context);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Error occurred when fetching stack frames", e);
+            }
+        });
+    }
+
+    // Todo - When to use?
+    public void stopRemoteDebugSession() {
+        // If we don 't call executeOnPooledThread() here, session will not be stopped correctly since this is
+        // called from netty. It seems like this is a blocking action and netty throws an exception.
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            XDebugSession session = getSession();
+            if (session != null) {
+                session.sessionResumed();
+                session.stop();
+            }
+            print("Remote debugging finished.\n", false);
+
+        });
+    }
+
+    private void initBreakpointHandlersAndSetBreakpoints() {
+        if (!breakpointsInitiated.compareAndSet(false, true)) {
+            return;
+        }
+        doSetBreakpoints();
+    }
+
+    private void doSetBreakpoints() {
+        ReadAction.run(() -> {
+            try {
+                getSession().initBreakpoints();
+            } catch (Exception e) {
+                LOGGER.warn("Error occurred when initializing breakpoints.");
+            }
+        });
+    }
+
+    private XBreakpoint<BallerinaBreakpointProperties> findBreakPoint(@NotNull StackFrame stackFrame) {
+        String filePath = stackFrame.getSource().getPath().trim();
+        int lineNumber = stackFrame.getLine();
+
+        for (XBreakpoint<BallerinaBreakpointProperties> breakpoint : breakpoints) {
+            XSourcePosition breakpointPosition = breakpoint.getSourcePosition();
+            if (breakpointPosition == null) {
+                continue;
+            }
+            VirtualFile fileInBreakpoint = breakpointPosition.getFile();
+            int line = breakpointPosition.getLine() + 1;
+            String fileInBreakpointPath = fileInBreakpoint.getPath().trim();
+            String encodedPath;
+            try {
+                // Create a URI from the file path and get a string in proper URI format
+                URI uri = new URI(null, null, fileInBreakpointPath, null);
+                encodedPath = uri.toString();
+            } catch (URISyntaxException e) {
+                LOGGER.warn("URI Syntax Exception: " + e.getMessage());
+                continue;
+            }
+            String commonSuffix = longestCommonSuffix(filePath,encodedPath);
+            int commonParts = 0;
+            try {
+                commonParts = Paths.get(commonSuffix).normalize().getNameCount();
+            } catch (Exception e) {
+                LOGGER.warn("URI Syntax Exception in common suffix: " + e.getMessage());
+            }
+            if ((filePath.endsWith(encodedPath) || commonParts >= 2) && line == lineNumber) {
+                return breakpoint;
+            }
+        }
+        return null;
+    }
+
+    public static String longestCommonSuffix(String s1, String s2) {
+        if (s1 == null || s2 == null) {
+            return "";  // Return empty string if either input string is null
+        }
+
+        int index1 = s1.length() - 1;
+        int index2 = s2.length() - 1;
+        int length = 0;
+
+        // Compare characters from the end of both strings
+        while (index1 >= 0 && index2 >= 0 && s1.charAt(index1) == s2.charAt(index2)) {
+            index1--;
+            index2--;
+            length++;
+        }
+
+        // Return the longest common suffix
+        return s1.substring(index1 + 1, index1 + 1 + length);
+    }
+
+    @Nullable
+    @Override
+    public XValueMarkerProvider<?, ?> createValueMarkerProvider() {
+        return super.createValueMarkerProvider();
+    }
+
+    @Override
+    public String getCurrentStateMessage() {
+        return dapClientConnector.getState();
+    }
+
+    @NotNull
+    @Override
+    public XDebugTabLayouter createTabLayouter() {
+        return super.createTabLayouter();
+    }
+
+    @Nullable
+    @Override
+    public XDebuggerEvaluator getEvaluator() {
+        return super.getEvaluator();
+    }
+
+    @Override
+    public void registerAdditionalActions(@NotNull DefaultActionGroup leftToolbar,
+                                          @NotNull DefaultActionGroup topToolbar,
+                                          @NotNull DefaultActionGroup settings) {
+        super.registerAdditionalActions(leftToolbar, topToolbar, settings);
+        topToolbar.remove(ActionManager.getInstance().getAction(XDebuggerActions.RUN_TO_CURSOR));
+    }
+
+    private void print(String message, boolean isError) {
+        ConsoleViewContentType type =
+                isError ? ConsoleViewContentType.ERROR_OUTPUT : ConsoleViewContentType.SYSTEM_OUTPUT;
+        getSession().getConsoleView().print(message, type);
+    }
+
+    private class BallerinaBreakpointHandler
+            extends XBreakpointHandler<XLineBreakpoint<BallerinaBreakpointProperties>> {
+
+        BallerinaBreakpointHandler() {
+            super(BallerinaBreakPointType.class);
+        }
+
+        @Override
+        public void registerBreakpoint(@NotNull XLineBreakpoint<BallerinaBreakpointProperties> breakpoint) {
+
+            XSourcePosition breakpointPosition = breakpoint.getSourcePosition();
+            if (breakpointPosition == null) {
+                return;
+            }
+
+            getSession().updateBreakpointPresentation(breakpoint, AllIcons.Debugger.Db_verified_breakpoint, null);
+            if (!isBalBreakpoint(breakpoint) || breakpoints.contains(breakpoint)) {
+                return;
+            }
+
+            breakpoints.add(breakpoint);
+            // Resend all debug points which are added to the source file of the modified breakpoint.
+            List<XBreakpoint<BallerinaBreakpointProperties>> breakpointsToBeSent = breakpoints.stream()
+                    .filter(xBreakpoint -> xBreakpoint.getType().getId().equals("BallerinaLineBreakpoint") &&
+                            xBreakpoint.getSourcePosition() != null &&
+                            xBreakpoint.getSourcePosition().getFile().getPath()
+                                    .equals(breakpoint.getSourcePosition().getFile().getPath()))
+                    .collect(Collectors.toList());
+            sendBreakpoints(breakpointsToBeSent, false);
+        }
+
+        @Override
+        public void unregisterBreakpoint(@NotNull XLineBreakpoint<BallerinaBreakpointProperties> breakpoint,
+                                         boolean temporary) {
+
+            XSourcePosition breakpointPosition = breakpoint.getSourcePosition();
+            if (breakpointPosition == null) {
+                return;
+            }
+
+            if (!isBalBreakpoint(breakpoint) || !breakpoints.contains(breakpoint)) {
+                return;
+            }
+
+            breakpoints.remove(breakpoint);
+            List<XBreakpoint<BallerinaBreakpointProperties>> breakpointsToBeSent = breakpoints.stream()
+                    .filter(xBreakpoint -> xBreakpoint.getType().getId().equals("BallerinaLineBreakpoint") &&
+                            xBreakpoint.getSourcePosition() != null &&
+                            xBreakpoint.getSourcePosition().getFile().getPath()
+                                    .equals(breakpoint.getSourcePosition().getFile().getPath()))
+                    .collect(Collectors.toList());
+            sendBreakpoints(breakpointsToBeSent, false);
+        }
+
+        private boolean isBalBreakpoint(@NotNull XLineBreakpoint<BallerinaBreakpointProperties> breakpoint) {
+            XSourcePosition pos = breakpoint.getSourcePosition();
+            return isConnected && pos != null && breakpoint.getType().getId().equals("BallerinaLineBreakpoint");
+        }
+
+        void sendBreakpoints(List<XBreakpoint<BallerinaBreakpointProperties>> breakpointList, boolean attach) {
+            if (!isConnected) {
+                return;
+            }
+
+            ApplicationManager.getApplication().invokeLater(() -> {
+//                if (attach) {
+//                    try {
+//                        // Sends "configuration done" notification to the debug server.
+//                        dapClientConnector.getRequestManager().configurationDone(new ConfigurationDoneArguments());
+//                    } catch (Exception e) {
+//                        LOGGER.warn("Configuration done request failed.", e);
+//                    }
+//                    // Sends attach request to the debug server.
+//                    LOGGER.debug("Sending Attach command.");
+////                    dapClientConnector.attachToServer();
+//                    dapClientConnector.launchServer();
+//                }
+                Map<Source, List<SourceBreakpoint>> sourceBreakpoints = new HashMap<>();
+                if (getSession().areBreakpointsMuted()) {
+                    return;
+                }
+                // Transforms IDEA breakpoint DAP breakpoints.
+                for (XBreakpoint<BallerinaBreakpointProperties> bp : breakpointList) {
+                    if (bp.getType().getId().equals("BallerinaLineBreakpoint") && bp.getSourcePosition() != null) {
+                        Source source = new Source();
+                        source.setName(bp.getSourcePosition().getFile().getName());
+                        source.setPath(bp.getSourcePosition().getFile().getPath());
+
+                        SourceBreakpoint dapBreakpoint = new SourceBreakpoint();
+                        dapBreakpoint.setLine((int) ((long) bp.getSourcePosition().getLine() + 1));
+                        if (sourceBreakpoints.get(source) == null) {
+                            sourceBreakpoints.put(source, new ArrayList<>(Collections.singleton(dapBreakpoint)));
+                        } else {
+                            sourceBreakpoints.get(source).add(dapBreakpoint);
+                        }
+                    }
+                }
+
+                // Sends "setBreakpoints()" requests per source file.
+                for (Map.Entry<Source, List<SourceBreakpoint>> entry : sourceBreakpoints.entrySet()) {
+                    SetBreakpointsArguments breakpointRequestArgs = new SetBreakpointsArguments();
+                    breakpointRequestArgs.setSource(entry.getKey());
+                    breakpointRequestArgs.setBreakpoints(entry.getValue().toArray(new SourceBreakpoint[0]));
+                    try {
+                        dapClientConnector.getRequestManager().setBreakpoints(breakpointRequestArgs);
+                    } catch (Exception e) {
+                        LOGGER.warn("Breakpoints send request failed.", e);
+                    }
+                }
+
+                if (attach) {
+                    try {
+                        // Sends "configuration done" notification to the debug server.
+                        dapClientConnector.getRequestManager().configurationDone(new ConfigurationDoneArguments());
+                    } catch (Exception e) {
+                        LOGGER.warn("Configuration done request failed.", e);
+                    }
+                    // Sends attach request to the debug server.
+                    LOGGER.debug("Sending Attach command.");
+                    dapClientConnector.attachToServer();
+//                    dapClientConnector.launchServer();
+                }
+            });
+        }
+    }
+}
