@@ -19,6 +19,7 @@ package io.ballerina.plugins.idea.preloading;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorKind;
 import com.intellij.openapi.editor.event.CaretListener;
 import com.intellij.openapi.editor.event.EditorFactoryEvent;
 import com.intellij.openapi.editor.event.EditorFactoryListener;
@@ -38,6 +39,7 @@ import io.ballerina.plugins.idea.widget.BallerinaIconWidget;
 import io.ballerina.plugins.idea.widget.BallerinaIconWidgetFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.wso2.lsp4intellij.IntellijLanguageClient;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,7 +68,7 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
         VirtualFile file = FileDocumentManager.getInstance().getFile(event.getEditor().getDocument());
         if (balSdkFound) {
             registerIconWidget(project);
-            registerLanguageServer(project);
+            registerLanguageServer(project, event.getEditor());
         }
         boolean isBallerinaFile = isBalFile(file);
         if (isBallerinaFile) {
@@ -95,7 +97,7 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
                     } else {
                         balSdkFound = true;
                         registerIconWidget(project);
-                        registerLanguageServer(project);
+                        registerLanguageServer(project, event.getEditor());
                     }
                 });
             }
@@ -109,6 +111,9 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
         CaretListener caretListener = editorCaretListenerMap.get(event.getEditor());
         if (caretListener != null) {
             event.getEditor().getCaretModel().removeCaretListener(caretListener);
+        }
+        if(event.getEditor().getEditorKind() == EditorKind.MAIN_EDITOR){
+            IntellijLanguageClient.editorClosed(event.getEditor());
         }
     }
 
@@ -132,9 +137,12 @@ public class BallerinaEditorFactoryListener implements EditorFactoryListener {
         }
     }
 
-    private void registerLanguageServer(Project project) {
+    private void registerLanguageServer(Project project, Editor editor) {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             registerProject(project);
+            if(editor.getEditorKind() == EditorKind.MAIN_EDITOR) {
+                IntellijLanguageClient.editorOpened(editor);
+            }
         });
     }
 }
