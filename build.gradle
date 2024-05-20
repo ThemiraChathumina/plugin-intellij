@@ -32,6 +32,9 @@ version = project.ballerinaPluginVersion
 
 dependencies {
     implementation group: "com.github.ballerina-platform", name: "lsp4intellij", version: "${lsp4IntellijVersion}"
+    implementation group: "org.eclipse.lsp4j", name: "org.eclipse.lsp4j.debug", version: "${lsp4jDebug}"
+    implementation group: "org.eclipse.lsp4j", name: "org.eclipse.lsp4j.jsonprc", version: "${lsp4jJsonrpc}"
+    implementation group: "org.eclipse.lsp4j", name: "org.eclipse.lsp4j.jsonrpc.debug", version: "${lsp4jJsonrpcDebug}"
 }
 
 intellij {
