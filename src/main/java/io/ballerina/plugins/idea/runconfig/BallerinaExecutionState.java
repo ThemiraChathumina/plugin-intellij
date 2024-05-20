@@ -38,6 +38,8 @@ public class BallerinaExecutionState extends CommandLineState {
     protected final Map<String, String> envVariables;
     protected final String balPath;
     protected String script;
+    protected boolean isDebugging = false;
+    protected int debugPort;
 
     protected BallerinaExecutionState(ExecutionEnvironment environment, String balPath, String script,
                                       List<String> commands, List<String> programArguments,
@@ -48,6 +50,11 @@ public class BallerinaExecutionState extends CommandLineState {
         this.script = script;
         this.programArguments = programArguments;
         this.envVariables = envVariables;
+    }
+
+    public void allowDebuggingWithPort(int port) {
+        isDebugging = true;
+        debugPort = port;
     }
 
     public String getScript() {

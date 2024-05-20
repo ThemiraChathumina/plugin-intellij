@@ -56,25 +56,30 @@ public class BallerinaTestState extends BallerinaExecutionState {
         GeneralCommandLine commandLine = new GeneralCommandLine(balPath, "test");
         commandLine.withEnvironment(envVariables);
 
-        if (commands != null && !commands.isEmpty()) {
-            for (String cmd : commands) {
-                if (!cmd.isBlank()) {
-                    commandLine.addParameter(cmd.strip());
+        if (isDebugging) {
+            commandLine.addParameter("--debug");
+            commandLine.addParameter(Integer.toString(debugPort));
+            commandLine.addParameter(source);
+        } else {
+            if (commands != null && !commands.isEmpty()) {
+                for (String cmd : commands) {
+                    if (!cmd.isBlank()) {
+                        commandLine.addParameter(cmd.strip());
+                    }
+                }
+            }
+
+            commandLine.addParameter(source);
+
+            if (programArguments != null && !programArguments.isEmpty()) {
+                commandLine.addParameter("--");
+                for (String arg : programArguments) {
+                    if (!arg.isBlank()) {
+                        commandLine.addParameter(arg.strip());
+                    }
                 }
             }
         }
-
-        commandLine.addParameter(source);
-
-        if (programArguments != null && !programArguments.isEmpty()) {
-            commandLine.addParameter("--");
-            for (String arg : programArguments) {
-                if (!arg.isBlank()) {
-                    commandLine.addParameter(arg.strip());
-                }
-            }
-        }
-
         commandLine.setWorkDirectory(script);
         OSProcessHandler processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine);
         ProcessTerminatedListener.attach(processHandler);
