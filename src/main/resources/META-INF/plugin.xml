@@ -84,17 +84,11 @@
         <configurationType
                 implementation="io.ballerina.plugins.idea.runconfig.test.BallerinaTestConfigurationType"/>
 
-        <codeInsight.lineMarkerProvider
+        <runLineMarkerContributor
                 language="Ballerina"
-                implementationClass="io.ballerina.plugins.idea.runconfig.application.BallerinaRunLineMarkerProvider"/>
-
-        <codeInsight.lineMarkerProvider
-                language="Ballerina"
-                implementationClass="io.ballerina.plugins.idea.runconfig.test.BallerinaTestLineMarkerProvider"/>
+                implementationClass="io.ballerina.plugins.idea.runconfig.BallerinaRunLineMarkerContributor"/>
 
         <applicationService serviceImplementation="org.wso2.lsp4intellij.IntellijLanguageClient"/>
-
-        <editorFactoryListener implementation="org.wso2.lsp4intellij.listeners.LSPEditorListener"/>
 
         <fileDocumentManagerListener implementation="org.wso2.lsp4intellij.listeners.LSPFileDocumentManagerListener"/>
 
@@ -123,6 +117,12 @@
         <spellchecker.support language="Ballerina"
                               implementationClass="io.ballerina.plugins.idea.spellchecker.BallerinaSpellcheckingStrategy"/>
 
+        <programRunner id="ballerinaDebugger"
+                       implementation="io.ballerina.plugins.idea.debugger.BallerinaDebugger"/>
+
+        <xdebugger.breakpointType
+                implementation="io.ballerina.plugins.idea.debugger.breakpoint.BallerinaBreakPointType"/>
+
         <!--        Todo: Enable after restoring the renaming support-->
         <!--        <renameHandler implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameHandler" id="LSPRenameHandler" order="first"/>-->
         <!--        <renamePsiElementProcessor implementation="org.wso2.lsp4intellij.contributors.rename.LSPRenameProcessor" id="LSPRenameProcessor" order="first"/>-->
@@ -133,8 +133,17 @@
             <add-to-group group-id="EditorPopupMenu.Run" anchor="last"/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
+        <action id="io.ballerina.plugins.idea.runconfig.application.BallerinaApplicationDebugAction"
+                class="io.ballerina.plugins.idea.runconfig.application.BallerinaApplicationDebugAction" text="Debug Ballerina file">
+            <add-to-group group-id="EditorPopupMenu.Run" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
         <action id="io.ballerina.plugins.idea.runconfig.test.BallerinaTestAction"
-                class="io.ballerina.plugins.idea.runconfig.test.BallerinaTestAction" text="Test Ballerina File">
+                class="io.ballerina.plugins.idea.runconfig.test.BallerinaTestAction" text="Test Ballerina file">
+            <add-to-group group-id="EditorPopupMenu.Run" anchor="last"/>
+        </action>
+        <action id="io.ballerina.plugins.idea.runconfig.test.BallerinaTestDebugAction"
+                class="io.ballerina.plugins.idea.runconfig.test.BallerinaTestDebugAction" text="Debug Ballerina test file">
             <add-to-group group-id="EditorPopupMenu.Run" anchor="last"/>
         </action>
         <action id="org.intellij.sdk.action.QuickDocAction" class="org.wso2.lsp4intellij.actions.LSPQuickDocAction">

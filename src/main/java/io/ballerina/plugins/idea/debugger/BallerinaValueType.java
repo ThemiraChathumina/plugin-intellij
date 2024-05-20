@@ -26,6 +26,8 @@ public enum BallerinaValueType {
     FUNCTION("function"),
     FUTURE("future"),
     OBJECT("object"),
+    REGEXP("regexp"),
+    CLIENT_OBJECT("client object"),
     SERVICE("service"),
     TYPE_DESC("typedesc"),
     HANDLE("handle"),

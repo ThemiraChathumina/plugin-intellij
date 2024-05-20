@@ -1,20 +1,3 @@
-/*
- * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 package io.ballerina.plugins.idea.runconfig.test;
 
 import com.intellij.execution.ExecutionException;
@@ -29,6 +12,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import io.ballerina.plugins.idea.BallerinaIcons;
+import io.ballerina.plugins.idea.debugger.BallerinaDebugger;
 import io.ballerina.plugins.idea.project.BallerinaProjectUtils;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkService;
 import io.ballerina.plugins.idea.sdk.BallerinaSdkUtils;
@@ -40,15 +24,9 @@ import java.util.Optional;
 
 import static io.ballerina.plugins.idea.BallerinaConstants.BAL_EXTENSION;
 
-/**
- * Represents Ballerina test action for running ballerina tests.
- *
- * @since 2.0.0
- */
-public class BallerinaTestAction extends AnAction {
-
-    public BallerinaTestAction() {
-        super(BallerinaIcons.TEST);
+public class BallerinaTestDebugAction extends AnAction {
+    public BallerinaTestDebugAction() {
+        super(BallerinaIcons.DEBUG);
     }
 
     @Override
@@ -129,7 +107,7 @@ public class BallerinaTestAction extends AnAction {
     private void executeConfiguration(Project project, RunConfiguration runConfiguration) {
         try {
             ExecutionEnvironmentBuilder.create(project, DefaultRunExecutor.getRunExecutorInstance(), runConfiguration)
-                    .buildAndExecute();
+                    .runner(new BallerinaDebugger()).buildAndExecute();
         } catch (ExecutionException ex) {
             throw new RuntimeException(ex);
         }
@@ -161,7 +139,7 @@ public class BallerinaTestAction extends AnAction {
             File moduleTests = new File(modulePath.get(), "tests");
             if (moduleTests.exists() && moduleTests.isDirectory()) {
                 String moduleName = new File(modulePath.get()).getName();
-                setTestVisibility(e, "module " + "\"" + moduleName + "\"");
+                setTestVisibility(e, "module tests " + "\"" + moduleName + "\"");
                 return true;
             }
         }
@@ -173,7 +151,7 @@ public class BallerinaTestAction extends AnAction {
             File tests = new File(packagePath.get(), "tests");
             if (tests.exists() && tests.isDirectory()) {
                 String packageName = new File(packagePath.get()).getName();
-                setTestVisibility(e, "package " + "\"" + packageName + "\"");
+                setTestVisibility(e, "package tests " + "\"" + packageName + "\"");
             } else {
                 e.getPresentation().setVisible(false);
             }
@@ -184,6 +162,6 @@ public class BallerinaTestAction extends AnAction {
 
     private void setTestVisibility(@NotNull AnActionEvent e, String testName) {
         e.getPresentation().setVisible(true);
-        e.getPresentation().setText("Test " + testName);
+        e.getPresentation().setText("Debug " + testName);
     }
 }

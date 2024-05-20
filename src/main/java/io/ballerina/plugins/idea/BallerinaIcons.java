@@ -38,7 +38,9 @@ public class BallerinaIcons {
     public static final Icon BAL_ICON = IconLoader.getIcon("/icons/ballerinaIcon.png", BallerinaIcons.class);
     public static final Icon APPLICATION_RUN = createIconWithShift(BAL_ICON, AllIcons.Nodes.RunnableMark);
     public static final Icon APPLICATION_TEST = createIconWithShift(BAL_ICON, AllIcons.Nodes.JunitTestMark);
+    public static final Icon APPLICATION_DEBUG = createIconWithShift(BAL_ICON, AllIcons.Actions.StartDebugger);
     public static final Icon RUN = AllIcons.RunConfigurations.TestState.Run;
+    public static final Icon DEBUG = AllIcons.Actions.StartDebugger;
     public static final Icon PACKAGE = PlatformIcons.FOLDER_ICON;
     public static final Icon MAIN = AllIcons.Nodes.Method;
     public static final Icon TEST = AllIcons.RunConfigurations.TestState.Green2;
@@ -64,7 +66,7 @@ public class BallerinaIcons {
             }
         };
         icon.setIcon(base, 0);
-        icon.setIcon(mark, 1, 0, base.getIconWidth() / 2);
+        icon.setIcon(mark, 1, base.getIconWidth() / 4, base.getIconWidth() / 2);
         return icon;
     }
 

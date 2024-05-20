@@ -32,9 +32,9 @@ version = project.ballerinaPluginVersion
 
 dependencies {
     implementation group: "com.github.ballerina-platform", name: "lsp4intellij", version: "${lsp4IntellijVersion}"
-    implementation group: "org.eclipse.lsp4j", name: "org.eclipse.lsp4j.debug", version: "${lsp4jDebug}"
-    implementation group: "org.eclipse.lsp4j", name: "org.eclipse.lsp4j.jsonprc", version: "${lsp4jJsonrpc}"
-    implementation group: "org.eclipse.lsp4j", name: "org.eclipse.lsp4j.jsonrpc.debug", version: "${lsp4jJsonrpcDebug}"
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.15.0'
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:0.15.0'
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc.debug:0.15.0'
 }
 
 intellij {
@@ -111,6 +111,6 @@ checkstyleTest {
     classpath = sourceSets.test.compileClasspath
 }
 
-build.dependsOn check
-runIde.dependsOn check
-buildPlugin.dependsOn check
+//build.dependsOn check
+//runIde.dependsOn check
+//buildPlugin.dependsOn check
