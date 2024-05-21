@@ -31,7 +31,7 @@ plugins {
 version = project.ballerinaPluginVersion
 
 dependencies {
-    implementation group: "com.github.ballerina-platform", name: "lsp4intellij", version: "${lsp4IntellijVersion}"
+    implementation 'com.github.themiraChathumina:lsp4intellij:connection-fix-SNAPSHOT'
     implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.15.0'
     implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:0.15.0'
     implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc.debug:0.15.0'
